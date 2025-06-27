@@ -1,0 +1,209 @@
+#version 460 core
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_buffer_reference : require
+#extension GL_ARB_gpu_shader_int64 : require
+
+#extension GL_EXT_shader_8bit_storage : require
+#extension GL_EXT_shader_explicit_arithmetic_types : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+
+hitAttributeEXT uint8_t colour;
+
+struct AABB {
+    vec3 bMin;
+    vec3 bMax;
+};
+
+struct GeometryData {
+    int type;
+    vec3 bMin;
+    int side;
+    float voxelWidth;
+    uint64_t dataAddress;
+};
+
+layout(buffer_reference, std430) buffer VoxelData {
+    uint8_t voxels[];
+};
+
+layout(binding = 3, set = 0) buffer InstanceData {
+    GeometryData geoData[];
+} instanceData;
+
+float boundingBoxIntersection(AABB boundingBox, vec3 origin, vec3 direction) {
+    vec3 invDir = 1.0 / direction;
+
+    vec3 t0 = (boundingBox.bMin - origin) * invDir;
+    vec3 t1 = (boundingBox.bMax - origin) * invDir;
+
+    vec3 tmin = min(t0, t1);
+    vec3 tmax = max(t0, t1);
+
+    float tNear = max(max(tmin.x, tmin.y), tmin.z);
+    float tFar = min(min(tmax.x, tmax.y), tmax.z);
+
+    if (tFar >= max(tNear, 0.0)) {
+        return tNear;
+    }
+    else {
+        return -1.0;
+    }
+}
+
+bool isInBoundingBox(AABB aabb, vec3 point) {
+    if (aabb.bMin.x <= point.x && point.x <= aabb.bMax.x && point.y <= aabb.bMax.y && point.y >= aabb.bMin.y && aabb.bMax.z >= point.z && aabb.bMin.z <= point.z) return true;
+    else return false;
+}
+
+bool gridIntersection(AABB gridBox, int side, float voxelWidth, uint64_t address, vec3 origin, vec3 direction) {
+    int x, y, z;
+    vec3 startPoint;
+    float startT = 0;
+
+    if (isInBoundingBox(gridBox, origin)) {
+        x = int(clamp(floor((origin.x - gridBox.bMin.x) / voxelWidth), 0, side - 1));
+        y = int(clamp(floor((origin.y - gridBox.bMin.y) / voxelWidth), 0, side - 1));
+        z = int(clamp(floor((origin.z - gridBox.bMin.z) / voxelWidth), 0, side - 1));
+
+        startPoint = origin;
+    }
+    else {
+        startT = boundingBoxIntersection(gridBox, origin, direction);
+        startPoint = origin + startT * direction;
+
+        x = int(clamp(floor((startPoint.x - gridBox.bMin.x) / voxelWidth), 0, side - 1));
+        y = int(clamp(floor((startPoint.y - gridBox.bMin.y) / voxelWidth), 0, side - 1));
+        z = int(clamp(floor((startPoint.z - gridBox.bMin.z) / voxelWidth), 0, side - 1));
+    }
+
+    ivec3 step = ivec3(sign(direction));
+
+    float tMaxX = (voxelWidth * (x + (step.x + 1) / 2) + gridBox.bMin.x - startPoint.x) / direction.x;
+    float tMaxY = (voxelWidth * (y + (step.y + 1) / 2) + gridBox.bMin.y - startPoint.y) / direction.y;
+    float tMaxZ = (voxelWidth * (z + (step.z + 1) / 2) + gridBox.bMin.z - startPoint.z) / direction.z;
+
+    float tDeltaX = step.x * voxelWidth / direction.x;
+    float tDeltaY = step.y * voxelWidth / direction.y;
+    float tDeltaZ = step.z * voxelWidth / direction.z;
+
+    VoxelData voxelData = VoxelData(address);
+
+    while (x >= 0 && x < side && y >= 0 && y < side && z >= 0 && z < side) {
+        if (voxelData.voxels[side * side * x + side * y + z] != 0) {
+            colour = voxelData.voxels[side * side * x + side * y + z];
+            reportIntersectionEXT(startT + min(min(tMaxX, tMaxY), tMaxZ), 0);
+            return true;
+        }
+
+        if (tMaxX < tMaxY && tMaxX < tMaxZ) {
+            tMaxX += tDeltaX;
+            x += step.x;
+        }
+        else if (tMaxY < tMaxZ) {
+            tMaxY += tDeltaY;
+            y += step.y;
+        }
+        else {
+            tMaxZ += tDeltaZ;
+            z += step.z;
+        }
+    }
+
+    return false;
+}
+
+void brickmapIntersection(AABB boundingBox, int side, float voxelWidth, uint64_t address, vec3 origin, vec3 direction) {
+    int x, y, z;
+    vec3 startPoint;
+    float startT = 0;
+
+    float brickWidth = side * voxelWidth / 4;
+
+    if (isInBoundingBox(boundingBox, origin)) {
+        x = int(clamp(floor((origin.x - boundingBox.bMin.x) / brickWidth), 0, 3));
+        y = int(clamp(floor((origin.y - boundingBox.bMin.y) / brickWidth), 0, 3));
+        z = int(clamp(floor((origin.z - boundingBox.bMin.z) / brickWidth), 0, 3));
+
+        startPoint = origin;
+    }
+    else {
+        startT = boundingBoxIntersection(boundingBox, origin, direction);
+        startPoint = origin + startT * direction;
+
+        x = int(clamp(floor((startPoint.x - boundingBox.bMin.x) / brickWidth), 0, 3));
+        y = int(clamp(floor((startPoint.y - boundingBox.bMin.y) / brickWidth), 0, 3));
+        z = int(clamp(floor((startPoint.z - boundingBox.bMin.z) / brickWidth), 0, 3));
+    }
+
+    ivec3 step = ivec3(sign(direction));
+
+    float tMaxX = (brickWidth * (x + (step.x + 1) / 2) + boundingBox.bMin.x - startPoint.x) / direction.x;
+    float tMaxY = (brickWidth * (y + (step.y + 1) / 2) + boundingBox.bMin.y - startPoint.y) / direction.y;
+    float tMaxZ = (brickWidth * (z + (step.z + 1) / 2) + boundingBox.bMin.z - startPoint.z) / direction.z;
+
+    float tDeltaX = step.x * brickWidth / direction.x;
+    float tDeltaY = step.y * brickWidth / direction.y;
+    float tDeltaZ = step.z * brickWidth / direction.z;
+
+    VoxelData voxelData = VoxelData(address);
+    uint64_t brickMask = 0;
+
+    for(int i = 0; i < 8; i++) {
+        brickMask |= uint64_t(voxelData.voxels[i]) << (i * 8);
+    }
+
+    while (x >= 0 && x < 4 && y >= 0 && y < 4 && z >= 0 && z < 4) {
+        if ( (brickMask & (uint64_t(1) << (4 * 4 * x + 4 * y + z))) != 0) {
+            if(voxelData.voxels[4 * 4 * x + 4 * y + z + 8] != 0) {
+                colour = voxelData.voxels[4 * 4 * x + 4 * y + z + 8];
+                reportIntersectionEXT(startT + min(tMaxX, min(tMaxY, tMaxZ)), 0);
+                break;
+            }
+        }
+        else {
+            AABB gridBox = {
+                brickWidth * vec3(x, y, z) + boundingBox.bMin,
+                brickWidth * vec3(x + 1, y + 1, z + 1) + boundingBox.bMin,
+            };
+
+            if(gridIntersection(gridBox, side / 4, voxelWidth, address + 72 + (side / 4) * (side / 4) * (side / 4) * voxelData.voxels[4 * 4 * x + 4 * y + z + 8], origin, direction)) {
+                break;
+            }
+        }
+
+        if (tMaxX < tMaxY && tMaxX < tMaxZ) {
+            tMaxX += tDeltaX;
+            x += step.x;
+        }
+        else if (tMaxY < tMaxZ) {
+            tMaxY += tDeltaY;
+            y += step.y;
+        }
+        else {
+            tMaxZ += tDeltaZ;
+            z += step.z;
+        }
+    }
+}
+
+void main() {
+    vec3 origin = gl_WorldRayOriginEXT;
+    vec3 direction = gl_WorldRayDirectionEXT;
+
+    GeometryData instance = instanceData.geoData[gl_InstanceCustomIndexEXT];
+
+    AABB gridBox = {
+        instance.bMin,
+        instance.bMin + vec3(instance.voxelWidth * instance.side)
+    };
+
+    switch(instance.type) {
+        case 0:
+            gridIntersection(gridBox, instance.side, instance.voxelWidth, instance.dataAddress, origin, direction);
+            break;
+
+        case 1:
+            brickmapIntersection(gridBox, instance.side, instance.voxelWidth, instance.dataAddress, origin, direction);
+            break;
+    }
+}
