@@ -24,16 +24,6 @@ struct CameraConstants {
     glm::mat4 inverseProj;
 };
 
-struct ShaderBindingTable {
-
-    Buffer buffer;
-
-    VkStridedDeviceAddressRegionKHR rgenRegion{};
-    VkStridedDeviceAddressRegionKHR missRegion{};
-    VkStridedDeviceAddressRegionKHR hitRegion{};
-    VkStridedDeviceAddressRegionKHR callRegion{};
-};
-
 class RayTracer {
     public:
 

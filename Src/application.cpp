@@ -1,4 +1,5 @@
 #include "application.h"
+#include "RayTracing/raytracer.h"
 #include <GLFW/glfw3.h>
 
 #include <cstdint>
@@ -482,23 +483,30 @@ void Application::createCommandPools() {
 
 ////////////////////////////////////////// IMPROVE SRNCRONIZATION THIS SHIT IS ASSS IMPROVE THIS PLEASEE REMBER TO IMPROVE THIS HAHAHAHAHHAHAHAHAHAHH H HH FU FENUFNFE JFE FUCKKKKKKKKKKKKKKKKKKKKKKKKKKKK ///////////////////////////////////////////////////
 void Application::main_loop() {
-	VkFenceCreateInfo fenceCreateInfo{};
-	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    FrameData framedata[FRAME_IN_FLIGHT];
 
-	VkFence inFlightFence;
-	VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &inFlightFence), "failed to create fence");
-	VkSemaphoreCreateInfo semCreateInfo{};
-	semCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    VkFenceCreateInfo fenceCreateInfo{};
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    fenceCreateInfo.pNext = nullptr;
 
-	VkSemaphore imageSemaphore, renderSemaphore;
-	VK_CHECK(vkCreateSemaphore(device, &semCreateInfo, nullptr, &imageSemaphore), "Failed to create semaphore");
-	VK_CHECK(vkCreateSemaphore(device, &semCreateInfo, nullptr, &renderSemaphore), "Failed to create semaphore");
+    VkSemaphoreCreateInfo semaphoreCreateInfo{};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphoreCreateInfo.flags = 0;
+    semaphoreCreateInfo.pNext = nullptr;
+
+    for(int i = 0; i < FRAME_IN_FLIGHT; i++) {
+        VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &framedata[i].inFlightFence), "Failed to create fence");
+
+        VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &framedata[i].imageSemaphore), "Failed to create Semaphore");
+        VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &framedata[i].renderFinishSemaphore), "Failed to create Semaphore");
+    }
 
 	CommandBuffer commandBuffer;
 	commandBuffer.createCommandBuffer(device, graphicsPool);
 
 	float lastFrame = 0;
+	uint32_t frameIndex = 0;
 
 	VkResult resize;
 
@@ -506,13 +514,13 @@ void Application::main_loop() {
 		float deltaTime = glfwGetTime() - lastFrame;
 		lastFrame = glfwGetTime();
 
-		vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-		vkResetFences(device, 1, &inFlightFence);
+		vkWaitForFences(device, 1, &framedata[frameIndex].inFlightFence, VK_TRUE, UINT64_MAX);
+		vkResetFences(device, 1, &framedata[frameIndex].inFlightFence);
 
-		vkResetCommandBuffer( commandBuffer.handle, 0);
+		vkResetCommandBuffer(commandBuffer.handle, 0);
 
 		uint32_t imageIndex;
-    	resize = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imageSemaphore, VK_NULL_HANDLE, &imageIndex);
+    	resize = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, framedata[frameIndex].imageSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 		if(resize == VK_ERROR_OUT_OF_DATE_KHR || resize == VK_SUBOPTIMAL_KHR) {
 			recreateSwapchain();
@@ -525,14 +533,14 @@ void Application::main_loop() {
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &renderSemaphore;
+		submitInfo.pSignalSemaphores = &framedata[frameIndex].renderFinishSemaphore;
 		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &imageSemaphore;
+		submitInfo.pWaitSemaphores = &framedata[frameIndex].imageSemaphore;
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer.handle;
 		submitInfo.pWaitDstStageMask = stageFlags;
 
-		VK_CHECK(vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence), "Failed to submit to queue");
+		VK_CHECK(vkQueueSubmit(graphicsQueue, 1, &submitInfo, framedata[frameIndex].inFlightFence), "Failed to submit to queue");
 
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -543,15 +551,15 @@ void Application::main_loop() {
 		presentInfo.pResults = nullptr;
 
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &renderSemaphore;
+		presentInfo.pWaitSemaphores = &framedata[frameIndex].renderFinishSemaphore;
 
 		resize = vkQueuePresentKHR(presentationQueue, &presentInfo);
-
-		resize = vkQueueWaitIdle(presentationQueue);
 
 		if(resize == VK_ERROR_OUT_OF_DATE_KHR) recreateSwapchain();
 
 		cout << "\rFPS : " << (1 / deltaTime);
+
+		frameIndex = frameIndex % FRAME_IN_FLIGHT;
 
 
 		glfwSwapBuffers(window);
@@ -562,9 +570,11 @@ void Application::main_loop() {
 
 	commandBuffer.freeCommandBuffer(device, graphicsPool);
 
-	vkDestroyFence(device, inFlightFence, nullptr);
-	vkDestroySemaphore(device, imageSemaphore, nullptr);
-	vkDestroySemaphore(device, renderSemaphore, nullptr);
+	for(int i = 0; i < FRAME_IN_FLIGHT; i++) {
+        vkDestroyFence(device, framedata[i].inFlightFence, nullptr);
+	    vkDestroySemaphore(device, framedata[i].imageSemaphore, nullptr);
+	    vkDestroySemaphore(device, framedata[i].renderFinishSemaphore, nullptr);
+	}
 }
 
 void Application::cleanupSwapchain() {

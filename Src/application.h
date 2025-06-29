@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <fstream>
 
+#define FRAME_IN_FLIGHT 2
+
 //REMEMBER TO HAVE A COMPUTE QUEUE AND OFF LOAD BUILDING ACCELERATION STRUCTURE TO THAT QUEUE
 
 using namespace std;
@@ -49,6 +51,12 @@ struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     vector<VkSurfaceFormatKHR> formats;
     vector<VkPresentModeKHR> presetMode;
+};
+
+struct FrameData {
+    VkFence inFlightFence;
+    VkSemaphore renderFinishSemaphore;
+    VkSemaphore imageSemaphore;
 };
 
 class Application {

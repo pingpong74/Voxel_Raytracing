@@ -36,14 +36,17 @@ void RayTracer::createRayTracer(VkDevice _device, VkPhysicalDevice _physicalDevi
 	VoxelModel monu1 = VoxelModel::loadModel("Models/monu1.vox");
 	VoxelModel monu2 = VoxelModel::loadModel("Models/monu2.vox");
 	VoxelModel monu3 = VoxelModel::loadModel("Models/monu3.vox");
+	VoxelModel test = VoxelModel::loadModel("Models/test.vox");
 
 	vector<uint8_t> monu1BrickMap = BrickMap::buildBrickmap(monu1.voxels.data(), monu1.side);
     vector<uint8_t> monu2BrickMap = BrickMap::buildBrickmap(monu2.voxels.data(),  monu2.side);
     vector<uint8_t> monu3BrickMap = BrickMap::buildBrickmap(monu3.voxels.data(), monu3.side);
+    vector<uint8_t> testBrickMap = BrickMap::buildBrickmap(test.voxels.data(), test.side);
 
-    accelerationStructureManager.addBottomLevelAccelerationStructure(BRICKMAP, glm::vec3(-70, 0, 0), monu1.side, 0.25f, monu1BrickMap.data(), monu1BrickMap.size());
-    accelerationStructureManager.addBottomLevelAccelerationStructure(BRICKMAP, glm::vec3(0), monu2.side, 0.25f, monu2BrickMap.data(), monu2BrickMap.size());
-    accelerationStructureManager.addBottomLevelAccelerationStructure(BRICKMAP, glm::vec3(-25, 0, 0), monu3.side, 0.25f, monu3BrickMap.data(), monu3BrickMap.size());
+    accelerationStructureManager.addBottomLevelAccelerationStructure(BRICKMAP, glm::vec3(-70, 0, 0), monu1.side, 0.1f, monu1BrickMap.data(), monu1BrickMap.size());
+    accelerationStructureManager.addBottomLevelAccelerationStructure(BRICKMAP, glm::vec3(0), monu2.side, 0.1f, monu2BrickMap.data(), monu2BrickMap.size());
+    accelerationStructureManager.addBottomLevelAccelerationStructure(BRICKMAP, glm::vec3(-25, 0, 0), monu3.side, 0.1f, monu3BrickMap.data(), monu3BrickMap.size());
+    accelerationStructureManager.addBottomLevelAccelerationStructure(BRICKMAP, glm::vec3(30, 0, 0), test.side, 0.1f, testBrickMap.data(), testBrickMap.size());
 
     accelerationStructureManager.createTopLevelAccelerationStructure();
 
@@ -410,7 +413,6 @@ void RayTracer::createDescritorSets() {
 
 void RayTracer::updateDescriptorSets(float deltaTime) {
     CameraConstants camCons{};
-    camCons.inverseView = glm::inverse(glm::mat4(1));
     camCons.inverseProj = glm::inverse(glm::perspective(glm::radians(45.0f), (float)imgExtent.width / (float) imgExtent.height, 0.1f, 100.0f));
 
     glm::mat4 view;
