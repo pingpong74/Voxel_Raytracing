@@ -31,14 +31,11 @@ class Buffer {
     VkDeviceMemory bufferMemory;
 
     //ADD SHARING MODES IN FUTURE PLEASE
-    void createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, bool isStaged) {
+    void createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
         VkBufferCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         createInfo.size = size;
-
-        if(isStaged) createInfo.usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        else createInfo.usage = usage;
-
+        createInfo.usage = usage;
         createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         if(vkCreateBuffer(device, &createInfo, nullptr, &handle) != VK_SUCCESS) {

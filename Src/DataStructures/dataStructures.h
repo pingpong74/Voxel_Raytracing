@@ -12,8 +12,8 @@ namespace BrickMap {
 }
 
 struct OctreeNode {
-    uint8_t childDivisionMask; //tells which of the child is subdivided. 1 means leaf chils, 0 means non leaf
-    uint8_t childMask; //if the child is a leaf node then 1 means that this voxel stores some data and 0 means that the pointer is just null and hence stores no data. No meaning if the node is divided.
+    uint8_t childDivisionMask; //Tells which of the following children are actually divided. If they are divided, its a uint32_t which will poit to more child data, otherwise it is uint8_t voxel data.
+    uint8_t childMask; //Tells which of the following childs have data. 1 means some data and 0 means air?.
     uint16_t childAddres;
 
     uint32_t to_uint32_t() {
@@ -30,5 +30,6 @@ namespace Octree {
     }
 
 
-    void buildOctree(uint8_t voxels[], int side, vector<uint8_t>& octree, int offsetX = 0, int offsetY = 0, int offsetZ = 0, int reccursionDepth = 0);
+    vector<uint8_t> buildOctree(uint8_t voxels[], int side);
+    void traverseOctree(uint8_t voxels[], int side, vector<uint8_t>& octree, bool isSubdivided, int offsetX, int offsetY, int offsetZ, int recursionDepth);
 }

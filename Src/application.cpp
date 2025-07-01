@@ -19,6 +19,7 @@ void Application::run() {
 	pickPhysicalDevices();
 	createLogicalDevice();
 
+
 	createSwapchain();
 	createImageViews();
 
@@ -243,7 +244,7 @@ int Application::rateSuitability(VkPhysicalDevice dev) {
 
 void Application::pickPhysicalDevices() {
 	uint32_t deviceCount;
-	vkEnumeratePhysicalDevices(instance, &deviceCount,nullptr);
+	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
 	vector<VkPhysicalDevice> physicalDevices(deviceCount);
 	vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices.data());
