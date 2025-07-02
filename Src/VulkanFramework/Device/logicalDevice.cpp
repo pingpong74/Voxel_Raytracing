@@ -1,8 +1,11 @@
 #include "logicalDevice.h"
+#include "physicalDevice.h"
 
 using namespace vkf;
 
-LogicalDevice LogicalDevice::createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<const char*> deviceExtensions, std::vector<const char*> validationLayers) {
+LogicalDevice LogicalDevice::createLogicalDevice(VkInstance instance, VkSurfaceKHR surface) {
+    VkPhysicalDevice physicalDevice = vkf::pickPhysicalDevices(instance,  surface);
+
     QueueFamily indices = QueueFamily::findQueueFamilies(physicalDevice, surface);
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentationFamily.value(), indices.transferFamily.value(), indices.computeFamily.value() };

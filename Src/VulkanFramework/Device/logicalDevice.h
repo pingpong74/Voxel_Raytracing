@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 #include <stdexcept>
@@ -6,6 +8,7 @@
 
 #include "../../config.h"
 #include "queueFamilies.h"
+#include "physicalDevice.h"
 
 namespace vkf {
     struct Buffer {
@@ -16,12 +19,13 @@ namespace vkf {
     struct Image {
         VkImage handle;
         VkImageView view;
+        VkDeviceMemory imgMemory;
     };
 
     class LogicalDevice {
         public:
 
-        static LogicalDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<const char*> deviceExtensions, std::vector<const char*> validationLayers);
+        static LogicalDevice createLogicalDevice(VkInstance instance, VkSurfaceKHR surface);
         VkQueue getGraphicsQueue();
 
         //Buffer
