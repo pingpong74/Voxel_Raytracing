@@ -1,6 +1,6 @@
 #pragma once
-#include "RayTracing/raytracer.h"
-#include <vulkan/vulkan_core.h>
+
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <cstdint>
@@ -8,15 +8,11 @@
 #include <stdexcept>
 #include <vector>
 #include <cstring>
-#include <limits>
-#include <algorithm>
-#include <fstream>
 
-#include "VulkanFramework/Device/logicalDevice.h"
+#include "VulkanFramework/vulkanFramework.h"
+#include "RayTracing/raytracer.h"
 
 #define FRAME_IN_FLIGHT 2
-
-//REMEMBER TO HAVE A COMPUTE QUEUE AND OFF LOAD BUILDING ACCELERATION STRUCTURE TO THAT QUEUE
 
 using namespace std;
 
@@ -36,49 +32,32 @@ class Application {
 
     void run();
 
-    void mouseInput(double xpos, double ypos) {
-        raytracer.cam.MouseInput(window, xpos, ypos);
-    }
-
-    void rayTracerResize() {
-        recreateSwapchain();
-        raytracer.handleResize(swapchainFormat, swapchainExtent);
-    }
-
     private:
 
     GLFWwindow* window;
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
 
-
     VkSurfaceKHR surface;
 
     vkf::LogicalDevice logicalDevice;
 
-    VkSurfaceFormatKHR swapchainFormat;
-    VkPresentModeKHR swapchainPresentMode;
-    VkExtent2D swapchainExtent;
-    VkSwapchainKHR swapchain;
+    vkf::Swapchain swapchain;
 
     VkCommandPool graphicsPool;
     VkCommandPool transferPool;
 
     RayTracer raytracer;
 
-    vector<VkImage> swapchainImages;
-    vector<VkImageView> swapchainImageViews;
-
-
-
     static void frameBufferResizeCallBack(GLFWwindow* window, int width, int height) {
         Application* app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
-        app->rayTracerResize();
+        app->swapchain.recreateSwapchain(width, height);
+        app->raytracer.handleResize(app->swapchain.swapchainFormat, app->swapchain.swapchainExtent);
     }
 
     static void mousePosCallBack(GLFWwindow *window, double xpos, double ypos) {
         Application* app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
-        app->mouseInput( xpos, ypos);
+        app->raytracer.cam.MouseInput(window,  xpos, ypos);
     }
 
     //Sends the error msg to console
@@ -101,24 +80,9 @@ class Application {
 
     void createSurface();
 
-    //swapchain creation
-    VkSurfaceFormatKHR chooseSurfaceFormat(const vector<VkSurfaceFormatKHR>& formats);
-    VkPresentModeKHR choosePresentMode(const vector<VkPresentModeKHR>& presentMode);
-    VkExtent2D chooseSwapChainExtent(VkSurfaceCapabilitiesKHR capabilities);
-    void createSwapchain();
-    void recreateSwapchain();
-
-    void createImageViews();
-    void createFramebuffers();
-
     void createCommandPools();
-
-    //Creating the shaders shit
-    VkShaderModule createShaderModule(const string& filePath);
-    VkPipelineShaderStageCreateInfo createShaderStageCreateInfo(VkShaderModule shaderModule, VkShaderStageFlagBits flags);
 
     void main_loop();
 
-    void cleanupSwapchain();
     void cleanup();
 };

@@ -1,10 +1,12 @@
 #include "logicalDevice.h"
 #include "physicalDevice.h"
+#include <glm/vector_relational.hpp>
+#include <vulkan/vulkan_core.h>
 
 using namespace vkf;
 
-LogicalDevice LogicalDevice::createLogicalDevice(VkInstance instance, VkSurfaceKHR surface) {
-    VkPhysicalDevice physicalDevice = vkf::pickPhysicalDevices(instance,  surface);
+void LogicalDevice::createLogicalDevice(VkInstance instance, VkSurfaceKHR surface) {
+    physicalDevice = vkf::pickPhysicalDevices(instance,  surface);
 
     QueueFamily indices = QueueFamily::findQueueFamilies(physicalDevice, surface);
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -24,7 +26,6 @@ LogicalDevice LogicalDevice::createLogicalDevice(VkInstance instance, VkSurfaceK
 	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelStructFeatures{};
 	accelStructFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 	accelStructFeatures.accelerationStructure = VK_TRUE;
-	//accelStructFeatures.pNext = &bufferDeviceAddressFeatures;
 
 	// Ray Tracing Pipeline feature
 	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
@@ -63,16 +64,14 @@ LogicalDevice LogicalDevice::createLogicalDevice(VkInstance instance, VkSurfaceK
         createInfo.enabledLayerCount = 0;
     #endif
 
-    VkDevice handle;
 	if(vkCreateDevice(physicalDevice, &createInfo, nullptr, &handle) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create logical device");
 	}
 
-	LogicalDevice device;
-	device.handle = handle;
-	device.physicalDevice = physicalDevice;
-
-	return device;
+	vkGetDeviceQueue(handle, indices.graphicsFamily.value(), 0, &graphicsQueue);
+	vkGetDeviceQueue(handle, indices.presentationFamily.value(), 0, &presentationQueue);
+	vkGetDeviceQueue(handle, indices.transferFamily.value(), 0, &transferQueue);
+	vkGetDeviceQueue(handle, indices.computeFamily.value(), 0, &computeQueue);
 }
 
 Buffer LogicalDevice::createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
@@ -114,6 +113,21 @@ Buffer LogicalDevice::createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMe
     return { buffer, bufferMemory};
 }
 
+CommandBuffer LogicalDevice::createCommandBuffer(VkCommandPool commandPool) {
+    VkCommandBuffer commandBuffer;
+
+    VkCommandBufferAllocateInfo allocInfo{};
+
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = commandPool;
+    allocInfo.pNext = nullptr;
+
+
+
+
+    return { commandBuffer };
+}
+
 uint32_t LogicalDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -125,4 +139,8 @@ uint32_t LogicalDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlag
     }
 
     throw std::runtime_error("Failed to find suitable memory type for the buffer");
+}
+
+void LogicalDevice::destroy() {
+    vkDestroyDevice(handle, nullptr);
 }

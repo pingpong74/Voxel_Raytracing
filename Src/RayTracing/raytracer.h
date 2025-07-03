@@ -8,10 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "../VulkanFramework/Device/logicalDevice.h"
-
-#include "../VulkanFramework/buffer.h"
-#include "../VulkanFramework/commandBuffer.h"
+#include "../VulkanFramework/vulkanFramework.h"
 
 #include "../DataStructures/dataStructures.h"
 #include "accelerationStructure.h"
@@ -19,9 +16,6 @@
 #include "model.h"
 
 using namespace std;
-
-#define VK_CHECK(name, err) \
-if(name != VK_SUCCESS) { throw runtime_error(err); }
 
 struct CameraConstants {
     glm::mat4 inverseView;

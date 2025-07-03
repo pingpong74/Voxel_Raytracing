@@ -1,17 +1,17 @@
 #include "raytracer.h"
+#include <cmath>
 #include <cstdint>
+#include <glm/detail/compute_common.hpp>
 #include <glm/matrix.hpp>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-void RayTracer::createRayTracer(VkDevice _device, VkPhysicalDevice _physicalDevice, VkQueue _graphicsQueue, VkCommandPool _graphicsPool, VkQueue _transferQueue, VkCommandPool _transferPool, VkSurfaceFormatKHR format, VkExtent2D extent, GLFWwindow* _window) {
-    device = _device;
-    physicalDevice = _physicalDevice;
-    graphicsQueue = _graphicsQueue;
+void RayTracer::createRayTracer(vkf::LogicalDevice* _logicalDevice, VkCommandPool _graphicsPool, VkCommandPool _transferPool, VkSurfaceFormatKHR format, VkExtent2D extent, GLFWwindow* _window) {
+    logicalDevice = _logicalDevice;
+
     graphicsPool = _graphicsPool;
-    transferQueue = _transferQueue;
     transferPool = _transferPool;
     window = _window;
 
@@ -24,14 +24,14 @@ void RayTracer::createRayTracer(VkDevice _device, VkPhysicalDevice _physicalDevi
 	VkPhysicalDeviceProperties2 deviceProperties2{};
 	deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	deviceProperties2.pNext = &rayTracingPipelineProperties;
-	vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
+	vkGetPhysicalDeviceProperties2(logicalDevice->physicalDevice, &deviceProperties2);
 
 	// Get acceleration structure properties, which will be used later on in the sample
 	accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 	VkPhysicalDeviceFeatures2 deviceFeatures2{};
 	deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	deviceFeatures2.pNext = &accelerationStructureFeatures;
-	vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
+	vkGetPhysicalDeviceFeatures2(logicalDevice->physicalDevice, &deviceFeatures2);
 
 	VoxelModel monu1 = VoxelModel::loadModel("Models/monu1.vox");
 	VoxelModel monu2 = VoxelModel::loadModel("Models/monu2.vox");
@@ -58,9 +58,9 @@ void RayTracer::createRayTracer(VkDevice _device, VkPhysicalDevice _physicalDevi
 }
 
 void RayTracer::loadFunctions() {
-    LOAD_FUNC(device, vkCreateRayTracingPipelinesKHR);
-    LOAD_FUNC(device, vkGetRayTracingShaderGroupHandlesKHR);
-    LOAD_FUNC(device, vkCmdTraceRaysKHR);
+    LOAD_FUNC(logicalDevice->handle, vkCreateRayTracingPipelinesKHR);
+    LOAD_FUNC(logicalDevice->handle, vkGetRayTracingShaderGroupHandlesKHR);
+    LOAD_FUNC(logicalDevice->handle, vkCmdTraceRaysKHR);
 }
 
 VkShaderModule RayTracer::createShaderModule(const string& filePath) {
@@ -83,7 +83,7 @@ VkShaderModule RayTracer::createShaderModule(const string& filePath) {
 
 	VkShaderModule shaderModule;
 
-    VK_CHECK(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) , "Failed to create shader module");
+    VK_CHECK(vkCreateShaderModule(logicalDevice->handle, &createInfo, nullptr, &shaderModule) , "Failed to create shader module");
 
 	return shaderModule;
 }
@@ -100,7 +100,7 @@ VkPipelineShaderStageCreateInfo RayTracer::createShaderStageCreateInfo(VkShaderM
 
 uint32_t RayTracer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+    vkGetPhysicalDeviceMemoryProperties(logicalDevice->physicalDevice, &memProperties);
 
     for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if( (typeFilter & (1 << i)) && ( (memProperties.memoryTypes[i].propertyFlags & properties) == properties) ) {
@@ -206,19 +206,19 @@ void RayTracer::createImage(VkSurfaceFormatKHR format, VkExtent2D extent) {
     imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imgCreateInfo.flags = 0;
 
-    VK_CHECK(vkCreateImage(device, &imgCreateInfo, nullptr, &frame), "Faield to create Image");
+    VK_CHECK(vkCreateImage(logicalDevice->handle, &imgCreateInfo, nullptr, &frame), "Faield to create Image");
 
     VkMemoryRequirements memoryRequirements{};
-    vkGetImageMemoryRequirements(device, frame, &memoryRequirements);
+    vkGetImageMemoryRequirements(logicalDevice->handle, frame, &memoryRequirements);
 
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memoryRequirements.size;
     allocInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits,  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    VK_CHECK(vkAllocateMemory(device, &allocInfo, nullptr, &imgMemory), "Failed to allocate image memory");
+    VK_CHECK(vkAllocateMemory(logicalDevice->handle, &allocInfo, nullptr, &imgMemory), "Failed to allocate image memory");
 
-    VK_CHECK(vkBindImageMemory(device, frame, imgMemory, 0), "Failed to bind Image memory");
+    VK_CHECK(vkBindImageMemory(logicalDevice->handle, frame, imgMemory, 0), "Failed to bind Image memory");
 
     VkImageViewCreateInfo viewCreateInfo{};
     viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -235,7 +235,7 @@ void RayTracer::createImage(VkSurfaceFormatKHR format, VkExtent2D extent) {
 	viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 	viewCreateInfo.subresourceRange.layerCount = 1;
 
-    VK_CHECK(vkCreateImageView(device, &viewCreateInfo, nullptr, &frameView), "Failed to create Image view");
+    VK_CHECK(vkCreateImageView(logicalDevice->handle, &viewCreateInfo, nullptr, &frameView), "Failed to create Image view");
 
     CommandBuffer commandBuffer;
     commandBuffer.createCommandBuffer(device, graphicsPool);
@@ -253,29 +253,29 @@ void RayTracer::createImage(VkSurfaceFormatKHR format, VkExtent2D extent) {
 	// Create fence to ensure that the command buffer has finished executing
 	VkFenceCreateInfo fenceInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
 	VkFence fence;
-	VK_CHECK(vkCreateFence(device, &fenceInfo, nullptr, &fence), "Failed to create fence");
+	VK_CHECK(vkCreateFence(logicalDevice->handle, &fenceInfo, nullptr, &fence), "Failed to create fence");
 
 	// Submit to the queue
 	VK_CHECK(vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence), "Failed to submit to queue");
 	// Wait for the fence to signal that command buffer has finished executing
-	VK_CHECK(vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX), "Queeus failed to comepelte");
+	VK_CHECK(vkWaitForFences(logicalDevice->handle, 1, &fence, VK_TRUE, UINT64_MAX), "Queeus failed to comepelte");
 
-	vkDestroyFence(device, fence, nullptr);
+	vkDestroyFence(logicalDevice->handle, fence, nullptr);
 
     imgExtent = extent;
 }
 
 void RayTracer::createUBOBuffer() {
-    ubo.createBuffer(device, physicalDevice, sizeof(CameraConstants), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, false);
+    ubo = logicalDevice->createBuffer(sizeof(CameraConstants), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
     CameraConstants camCons{};
     camCons.inverseView = glm::inverse(glm::mat4(1));
     camCons.inverseProj = glm::inverse(glm::perspective(glm::radians(45.0f), (float)imgExtent.width / (float) imgExtent.height, 0.1f, 100.0f));
 
     void* mapped;
-    vkMapMemory(device, ubo.bufferMemory, 0, sizeof(camCons), 0, &mapped);
+    vkMapMemory(logicalDevice->handle, ubo.bufferMemory, 0, sizeof(camCons), 0, &mapped);
     memcpy(mapped, &camCons, sizeof(camCons));
-    vkUnmapMemory(device, ubo.bufferMemory);
+    vkUnmapMemory(logicalDevice->handle, ubo.bufferMemory);
 }
 
 void RayTracer::createDescritorSets() {
@@ -315,7 +315,7 @@ void RayTracer::createDescritorSets() {
     layoutCreateInfo.pBindings = bindingInfo;
     layoutCreateInfo.pNext = nullptr;
 
-    VK_CHECK(vkCreateDescriptorSetLayout(device, &layoutCreateInfo, nullptr, &set0Layout), "Failed to create descriptor set layout");
+    VK_CHECK(vkCreateDescriptorSetLayout(logicalDevice->handle, &layoutCreateInfo, nullptr, &set0Layout), "Failed to create descriptor set layout");
 
     VkDescriptorPoolSize asPoolSize{};
     asPoolSize.descriptorCount = 1;
@@ -342,7 +342,7 @@ void RayTracer::createDescritorSets() {
     poolCreateInfo.poolSizeCount = 4;
     poolCreateInfo.pPoolSizes = poolSizes;
 
-    VK_CHECK(vkCreateDescriptorPool(device, &poolCreateInfo, nullptr, &descriptorPool), "Failed to make descriptor pool");
+    VK_CHECK(vkCreateDescriptorPool(logicalDevice->handle, &poolCreateInfo, nullptr, &descriptorPool), "Failed to make descriptor pool");
 
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -351,7 +351,7 @@ void RayTracer::createDescritorSets() {
     allocInfo.pNext = nullptr;
     allocInfo.pSetLayouts = &set0Layout;
 
-    VK_CHECK(vkAllocateDescriptorSets(device, &allocInfo, &set0), "Failed to allocate descriptor set");
+    VK_CHECK(vkAllocateDescriptorSets(logicalDevice->handle, &allocInfo, &set0), "Failed to allocate descriptor set");
 
     VkWriteDescriptorSetAccelerationStructureKHR desASInfo{};
     desASInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
@@ -408,7 +408,7 @@ void RayTracer::createDescritorSets() {
 
     VkWriteDescriptorSet writeInfo[] = {asWrite, imgWrite, camWrite, storageWrite};
 
-    vkUpdateDescriptorSets(device, 4, writeInfo, 0, VK_NULL_HANDLE);
+    vkUpdateDescriptorSets(logicalDevice->handle, 4, writeInfo, 0, VK_NULL_HANDLE);
 }
 
 void RayTracer::updateDescriptorSets(float deltaTime) {
@@ -422,9 +422,9 @@ void RayTracer::updateDescriptorSets(float deltaTime) {
     camCons.inverseView = glm::inverse(view);
 
     void* mapped;
-    vkMapMemory(device, ubo.bufferMemory, 0, sizeof(camCons), 0, &mapped);
+    vkMapMemory(logicalDevice->handle, ubo.bufferMemory, 0, sizeof(camCons), 0, &mapped);
     memcpy(mapped, &camCons, sizeof(camCons));
-    vkUnmapMemory(device, ubo.bufferMemory);
+    vkUnmapMemory(logicalDevice->handle, ubo.bufferMemory);
 
 
     VkDescriptorBufferInfo camInfo{};
@@ -443,7 +443,7 @@ void RayTracer::updateDescriptorSets(float deltaTime) {
 
     VkWriteDescriptorSet writeInfo[] = {camWrite};
 
-    vkUpdateDescriptorSets(device, 1, writeInfo, 0, VK_NULL_HANDLE);
+    vkUpdateDescriptorSets(logicalDevice->handle, 1, writeInfo, 0, VK_NULL_HANDLE);
 
 }
 
@@ -503,7 +503,7 @@ void RayTracer::createRayTracingPipeline() {
     layoutCreateInfo.setLayoutCount = 1;
     layoutCreateInfo.pSetLayouts = &set0Layout;
 
-    VK_CHECK(vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &rayTracingPipelineLayout), "Failed to create rt pipeline layout");
+    VK_CHECK(vkCreatePipelineLayout(logicalDevice->handle, &layoutCreateInfo, nullptr, &rayTracingPipelineLayout), "Failed to create rt pipeline layout");
 
     //create the pipeline
     VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo{};
@@ -516,12 +516,12 @@ void RayTracer::createRayTracingPipeline() {
     pipelineCreateInfo.maxPipelineRayRecursionDepth = 2;
     pipelineCreateInfo.layout = rayTracingPipelineLayout;
 
-    VK_CHECK(vkCreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &rayTracingPipeline), "Failed to create ray tracing pipeline");
+    VK_CHECK(vkCreateRayTracingPipelinesKHR(logicalDevice->handle, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &rayTracingPipeline), "Failed to create ray tracing pipeline");
 
-    vkDestroyShaderModule(device, raygenMod, nullptr);
-    vkDestroyShaderModule(device, missMod, nullptr);
-    vkDestroyShaderModule(device, closestHitMod, nullptr);
-    vkDestroyShaderModule(device, intersectionMod, nullptr);
+    vkDestroyShaderModule(logicalDevice->handle, raygenMod, nullptr);
+    vkDestroyShaderModule(logicalDevice->handle, missMod, nullptr);
+    vkDestroyShaderModule(logicalDevice->handle, closestHitMod, nullptr);
+    vkDestroyShaderModule(logicalDevice->handle, intersectionMod, nullptr);
 }
 
 void RayTracer::createShaderBindingTable() {
@@ -533,13 +533,14 @@ void RayTracer::createShaderBindingTable() {
     const uint32_t handleSizeAligned = (handleSize + handleAlignemt - 1) & ~(handleAlignemt - 1);
 
     vector<uint8_t> shaderHandles(groupCount * handleSize);
-    VK_CHECK(vkGetRayTracingShaderGroupHandlesKHR(device, rayTracingPipeline, 0, groupCount, shaderHandles.size(), shaderHandles.data()), "Failed to get shader handles");
+    VK_CHECK(vkGetRayTracingShaderGroupHandlesKHR(logicalDevice->handle, rayTracingPipeline, 0, groupCount, shaderHandles.size(), shaderHandles.data()), "Failed to get shader handles");
 
-    sbtBuffer.createBuffer(device, physicalDevice, groupCount * baseAligment, VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, false);
+    sbtBuffer = logicalDevice->createBuffer(groupCount * baseAligment, VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    vkf::Buffer sbtStagingBuffer = logicalDevice->createBuffer(groupCount * baseAligment, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     //Put the data in the buffer
     void* mappedData = nullptr;
-    vkMapMemory(device, sbtBuffer.bufferMemory, 0, groupCount * handleAlignemt, 0, &mappedData);
+    vkMapMemory(logicalDevice->handle, sbtStagingBuffer.bufferMemory, 0, groupCount * handleAlignemt, 0, &mappedData);
 
     uint8_t* pData = reinterpret_cast<uint8_t*>(mappedData);
 
@@ -547,9 +548,12 @@ void RayTracer::createShaderBindingTable() {
         memcpy(pData + i * baseAligment, shaderHandles.data() + i * handleSize, handleSize);
     }
 
-    vkUnmapMemory(device, sbtBuffer.bufferMemory);
+    vkUnmapMemory(logicalDevice->handle, sbtStagingBuffer.bufferMemory);
 
-    VkDeviceAddress sbtAddress = sbtBuffer.getBufferAddress(device);
+    CommandBuffer commandBuffer = logicalDevice->createCommandBuffer(transferPool);
+    vkf::Buffer::copyBuffer(sbtStagingBuffer, sbtBuffer, groupCount * baseAligment, commandBuffer);
+
+    VkDeviceAddress sbtAddress = sbtBuffer.getBufferAddress(logicalDevice->handle);
 
     //Finally get the device addresses and shit idk wtf
     rgenRegion.deviceAddress = sbtAddress;

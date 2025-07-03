@@ -1,12 +1,4 @@
 #include "application.h"
-#include "RayTracing/raytracer.h"
-#include "VulkanFramework/Device/logicalDevice.h"
-#include <GLFW/glfw3.h>
-
-#include <cmath>
-#include <cstdint>
-#include <stdexcept>
-#include <vulkan/vulkan_core.h>
 
 void Application::run() {
 
@@ -17,14 +9,15 @@ void Application::run() {
 	createSurface();
 	setupDebugMessenger();
 
-	logicalDevice = vkf::LogicalDevice::createLogicalDevice(instance,  surface);
+	logicalDevice.createLogicalDevice(instance,  surface);
 
-	createSwapchain();
-	createImageViews();
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+	swapchain.createSwapchain(&logicalDevice, width, height);
 
 	createCommandPools();
 
-	raytracer.createRayTracer(&logicalDevice, graphicsPool,  transferPool, swapchainFormat, swapchainExtent, window);
+	raytracer.createRayTracer(&logicalDevice, graphicsPool,  transferPool, swapchain.swapchainFormat, swapchain.swapchainExtent, window);
 
     main_loop();
 
@@ -149,137 +142,15 @@ void Application::createSurface() {
 	}
 }
 
-VkSurfaceFormatKHR Application::chooseSurfaceFormat(const vector<VkSurfaceFormatKHR>& formats) {
-	for(const auto& format : formats) {
-		if(format.format == VK_FORMAT_B8G8R8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) return format;
-	}
-
-	return formats[0];
-}
-
-VkPresentModeKHR Application::choosePresentMode(const vector<VkPresentModeKHR>& presentModes) {
-	for(const auto& presentationMode: presentModes) {
-		if(presentationMode == VK_PRESENT_MODE_MAILBOX_KHR) return presentationMode;
-	}
-
-	return VK_PRESENT_MODE_FIFO_KHR;
-}
-
-VkExtent2D Application::chooseSwapChainExtent(VkSurfaceCapabilitiesKHR capabilities) {
-
-	if(capabilities.currentExtent.width != numeric_limits<uint32_t>::max()) return capabilities.currentExtent;
-
-	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
-
-	VkExtent2D extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-
-	extent.width = clamp(extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-	extent.height = clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-
-	return extent;
-}
-
-void Application::createSwapchain() {
-	vkf::SwapChainSupportDetails supportDetails = vkf::querySwapChainSupport(logicalDevice.);
-
-	VkSurfaceFormatKHR format = chooseSurfaceFormat(supportDetails.formats);
-	VkPresentModeKHR presentMode = choosePresentMode(supportDetails.presetMode);
-	VkExtent2D extent = chooseSwapChainExtent(supportDetails.capabilities);
-
-	uint32_t imageCount = supportDetails.capabilities.minImageCount;
-
-	if(imageCount < supportDetails.capabilities.maxImageCount && supportDetails.capabilities.maxImageCount > 0) imageCount = supportDetails.capabilities.maxImageCount;
-
-	VkSwapchainCreateInfoKHR createInfo{};
-
-	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.imageFormat = format.format;
-	createInfo.imageColorSpace = format.colorSpace;
-	createInfo.imageExtent = extent;
-	createInfo.presentMode = presentMode;
-	createInfo.clipped = VK_TRUE;
-	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	createInfo.surface = surface;
-	createInfo.minImageCount = imageCount;
-
-	QueueFamily family = findQueueFamilies(physicalDevice);
-	uint32_t queues[] = {family.graphicsFamily.value(), family.presentationFamily.value()};
-
-	if(queues[0] != queues[1]) {
-		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-    	createInfo.queueFamilyIndexCount = 2;
-    	createInfo.pQueueFamilyIndices = queues;
-	}
-	else {
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    	createInfo.queueFamilyIndexCount = 0;
-    	createInfo.pQueueFamilyIndices = nullptr;
-	}
-
-	createInfo.preTransform = supportDetails.capabilities.currentTransform;
-
-	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-
-	createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-	if(vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
-		throw runtime_error("Failed to create swapchain");
-	}
-
-	vkGetSwapchainImagesKHR(device, swapchain,&imageCount,nullptr);
-	swapchainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
-
-	swapchainFormat = format;
-	swapchainPresentMode = presentMode;
-	swapchainExtent = extent;
-}
-
-void Application::recreateSwapchain() {
-	vkDeviceWaitIdle(device);
-	cleanupSwapchain();
-
-    createSwapchain();
-    createImageViews();
-}
-
-void Application::createImageViews() {
-	swapchainImageViews.resize(swapchainImages.size());
-
-	for(size_t i = 0; i < swapchainImages.size(); i++) {
-		VkImageViewCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		createInfo.image = swapchainImages[i];
-		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo.format = swapchainFormat.format;
-		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		createInfo.subresourceRange.baseMipLevel = 0;
-		createInfo.subresourceRange.levelCount = 1;
-		createInfo.subresourceRange.baseArrayLayer = 0;
-		createInfo.subresourceRange.layerCount = 1;
-
-		if(vkCreateImageView(device, &createInfo, nullptr, &swapchainImageViews[i]) != VK_SUCCESS) {
-			throw runtime_error("Failed to create image view");
-		}
-
-	}
-}
-
 void Application::createCommandPools() {
-	QueueFamily familes = findQueueFamilies(physicalDevice);
+	QueueFamily familes = QueueFamily::findQueueFamilies(logicalDevice.physicalDevice, surface);
 
 	VkCommandPoolCreateInfo graphicPoolInfo{};
 	graphicPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	graphicPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	graphicPoolInfo.queueFamilyIndex = familes.graphicsFamily.value();
 
-	if(vkCreateCommandPool(device, &graphicPoolInfo, nullptr, &graphicsPool) != VK_SUCCESS) {
+	if(vkCreateCommandPool(logicalDevice.handle, &graphicPoolInfo, nullptr, &graphicsPool) != VK_SUCCESS) {
 		throw runtime_error("Failed to create graphics pool");
 	}
 
@@ -288,7 +159,7 @@ void Application::createCommandPools() {
 	transferPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	transferPoolInfo.queueFamilyIndex = familes.transferFamily.value();
 
-	if(vkCreateCommandPool(device, &transferPoolInfo, nullptr, &transferPool) != VK_SUCCESS) {
+	if(vkCreateCommandPool(logicalDevice.handle, &transferPoolInfo, nullptr, &transferPool) != VK_SUCCESS) {
 		throw runtime_error("Failed to create transfer pool");
 	}
 }
@@ -308,14 +179,13 @@ void Application::main_loop() {
     semaphoreCreateInfo.pNext = nullptr;
 
     for(int i = 0; i < FRAME_IN_FLIGHT; i++) {
-        VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &framedata[i].inFlightFence), "Failed to create fence");
+        VK_CHECK(vkCreateFence(logicalDevice.handle, &fenceCreateInfo, nullptr, &framedata[i].inFlightFence), "Failed to create fence");
 
-        VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &framedata[i].imageSemaphore), "Failed to create Semaphore");
-        VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &framedata[i].renderFinishSemaphore), "Failed to create Semaphore");
+        VK_CHECK(vkCreateSemaphore(logicalDevice.handle, &semaphoreCreateInfo, nullptr, &framedata[i].imageSemaphore), "Failed to create Semaphore");
+        VK_CHECK(vkCreateSemaphore(logicalDevice.handle, &semaphoreCreateInfo, nullptr, &framedata[i].renderFinishSemaphore), "Failed to create Semaphore");
     }
 
-	CommandBuffer commandBuffer;
-	commandBuffer.createCommandBuffer(device, graphicsPool);
+	CommandBuffer commandBuffer = logicalDevice.createCommandBuffer(graphicsPool);
 
 	float lastFrame = 0;
 	uint32_t frameIndex = 0;
@@ -389,22 +259,14 @@ void Application::main_loop() {
 	}
 }
 
-void Application::cleanupSwapchain() {
-	for(auto imageView: swapchainImageViews) {
-		vkDestroyImageView(device, imageView, nullptr);
-	}
-
-	vkDestroySwapchainKHR(device, swapchain, nullptr);
-}
-
 void Application::cleanup() {
     raytracer.cleanup();
 	vkDestroyCommandPool(device, graphicsPool, nullptr);
 	vkDestroyCommandPool(device, transferPool, nullptr);
 
-	cleanupSwapchain();
+	swapchain.destroy();
 
-	vkDestroyDevice(device, nullptr);
+	logicalDevice.
 	vkDestroySurfaceKHR(instance,surface, nullptr);
 
 	if(enableValidationLayers) {

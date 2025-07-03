@@ -22,17 +22,15 @@ namespace vkf {
 
         VkQueue graphicsQueue, transferQueue, computeQueue, presentationQueue;
 
-        static LogicalDevice createLogicalDevice(VkInstance instance, VkSurfaceKHR surface);
-        VkQueue getGraphicsQueue();
-        VkQueue getTransferQueue();
-        VkQueue getComputeQueue();
-        VkQueue getPresentationQueue();
+        void createLogicalDevice(VkInstance instance, VkSurfaceKHR surface);
 
         //Buffer
         Buffer createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
         //Command Buffer
-        VkCommandBuffer createCommandBuffer();
+        CommandBuffer createCommandBuffer(VkCommandPool commandPool);
+
+        void destroy();
 
         private:
 

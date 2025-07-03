@@ -19,8 +19,8 @@ namespace vkf {
 
         std::vector<VkImage> swapchainImages;
 
-        void createSwapchain(LogicalDevice* logicalDevice, VkSurfaceKHR surface, int width, int height);
-        void recreateSwapchain();
+        void createSwapchain(LogicalDevice* logicalDevice, int width, int height, VkSurfaceKHR surface = 0);
+        void recreateSwapchain(int width, int height);
         void destroy();
 
         private:
@@ -28,6 +28,7 @@ namespace vkf {
         std::vector<VkImageView> swapchainImageViews;
 
         LogicalDevice* logicalDevice;
+        VkSurfaceKHR surface = 0;
 
         static VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
         static VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& presentMode);

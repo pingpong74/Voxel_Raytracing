@@ -1,10 +1,15 @@
 #include "swapchain.h"
+#include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
 using namespace vkf;
 
-void Swapchain::createSwapchain(LogicalDevice* _logicalDevice, VkSurfaceKHR surface, int width, int height) {
+void Swapchain::createSwapchain(LogicalDevice* _logicalDevice, int width, int height, VkSurfaceKHR _surface) {
     logicalDevice = _logicalDevice;
+    if(_surface != nullptr) surface = _surface;
+    if(surface == nullptr) {
+        throw std::runtime_error("no surface provided");
+    }
 
     SwapChainSupportDetails supportDetails = querySwapChainSupport(logicalDevice->physicalDevice, surface);
 
@@ -110,8 +115,11 @@ VkExtent2D Swapchain::chooseSwapChainExtent(VkSurfaceCapabilitiesKHR capabilitie
 	return extent;
 }
 
-void Swapchain::recreateSwapchain() {
+void Swapchain::recreateSwapchain(int width, int height) {
+    vkDeviceWaitIdle(logicalDevice->handle);
+    destroy();
 
+    createSwapchain(logicalDevice, width, height);
 }
 
 void Swapchain::destroy() {
