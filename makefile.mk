@@ -1,4 +1,4 @@
-file := Src/main.cpp Src/application.cpp Src/RayTracing/raytracer.cpp Src/RayTracing/accelerationStructure.cpp Src/DataStructures/brickmap.cpp Src/RayTracing/model.cpp
+file := Src/main.cpp Src/application.cpp Src/RayTracing/raytracer.cpp Src/RayTracing/accelerationStructure.cpp Src/DataStructures/brickmap.cpp Src/RayTracing/model.cpp Src/VulkanFramework/Device/logicalDevice.cpp Src/VulkanFramework/Device/physicalDevice.cpp
 shaders := Shaders/intersection.rint Shaders/closestHit.rchit Shaders/miss.rmiss Shaders/raygen.rgen
 
 cFlags := -std=c++17 -O2

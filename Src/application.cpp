@@ -1,11 +1,11 @@
 #include "application.h"
 #include "RayTracing/raytracer.h"
+#include "VulkanFramework/Device/logicalDevice.h"
 #include <GLFW/glfw3.h>
 
+#include <cmath>
 #include <cstdint>
-#include <map>
 #include <stdexcept>
-#include <utility>
 #include <vulkan/vulkan_core.h>
 
 void Application::run() {
@@ -16,16 +16,15 @@ void Application::run() {
 	create_instance();
 	createSurface();
 	setupDebugMessenger();
-	pickPhysicalDevices();
-	createLogicalDevice();
 
+	logicalDevice = vkf::LogicalDevice::createLogicalDevice(instance,  surface);
 
 	createSwapchain();
 	createImageViews();
 
 	createCommandPools();
 
-	raytracer.createRayTracer(device, physicalDevice, graphicsQueue, graphicsPool, transferQueue, transferPool, swapchainFormat, swapchainExtent, window);
+	raytracer.createRayTracer(&logicalDevice, graphicsPool,  transferPool, swapchainFormat, swapchainExtent, window);
 
     main_loop();
 
@@ -144,194 +143,6 @@ void Application::setupDebugMessenger() {
 	if(func == nullptr || func(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) throw runtime_error("Failed to setuo debug messenger");
 }
 
-QueueFamily Application::findQueueFamilies(VkPhysicalDevice dev) {
-	QueueFamily queueFamily;
-
-	uint32_t queueFamilyCount;
-	vkGetPhysicalDeviceQueueFamilyProperties(dev, &queueFamilyCount, nullptr);
-
-	vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(dev, &queueFamilyCount, queueFamilyProperties.data());
-
-	int i = 0;
-
-	for(const auto& properties : queueFamilyProperties) {
-
-		if(properties.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			queueFamily.graphicsFamily = i;
-		}
-
-		VkBool32 presetationQueuePresent = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(dev, i, surface, &presetationQueuePresent);
-
-		if(presetationQueuePresent) {
-			queueFamily.presentationFamily = i;
-		}
-
-		if(properties.queueFlags & VK_QUEUE_TRANSFER_BIT && !(properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
-			queueFamily.transferFamily = i;
-		}
-
-		if(queueFamily.isComplete()) break;
-
-		i++;
-
-	}
-
-	return queueFamily;
-}
-
-SwapChainSupportDetails Application::querySwapChainSupport(VkPhysicalDevice dev) {
-	SwapChainSupportDetails details;
-
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(dev, surface, &details.capabilities);
-
-	uint32_t formatCount;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(dev, surface,&formatCount, nullptr);
-
-	if(formatCount != 0) {
-		details.formats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(dev, surface, &formatCount, details.formats.data());
-	}
-
-	uint32_t presentCount;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(dev, surface, &presentCount, nullptr);
-
-	if(presentCount != 0) {
-		details.presetMode.resize(presentCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(dev, surface, &presentCount, details.presetMode.data());
-	}
-
-	return details;
-}
-
-bool Application::checkDeviceExtensionsSupport(VkPhysicalDevice dev) {
-	uint32_t extensionCount;
-	vkEnumerateDeviceExtensionProperties(dev, nullptr, &extensionCount, nullptr);
-
-	vector<VkExtensionProperties> extensions(extensionCount);
-	vkEnumerateDeviceExtensionProperties(dev, nullptr,&extensionCount, extensions.data());
-
-	set<string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-
-	for(const auto& extension: extensions) {
-		requiredExtensions.erase(extension.extensionName);
-	}
-
-	return requiredExtensions.empty();
-}
-
-int Application::rateSuitability(VkPhysicalDevice dev) {
-	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(dev, &deviceProperties);
-
-	QueueFamily qf = findQueueFamilies(dev);
-
-	if(!qf.isComplete()) return 0;
-	if(!checkDeviceExtensionsSupport(dev)) return 0;
-
-
-	SwapChainSupportDetails details = querySwapChainSupport(dev);
-
-	if(details.presetMode.empty() || details.formats.empty()) return 0;
-
-	int score = 0;
-
-	if(deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) score += 100;
-
-	return score;
-}
-
-void Application::pickPhysicalDevices() {
-	uint32_t deviceCount;
-	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-
-	vector<VkPhysicalDevice> physicalDevices(deviceCount);
-	vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices.data());
-
-	multimap<int, VkPhysicalDevice> scoreTable;
-
-	for(const auto& devices : physicalDevices) {
-		int score = rateSuitability(devices);
-		scoreTable.insert(make_pair(score, devices));
-	}
-
-	if(scoreTable.rbegin()->first > 0) {
-		physicalDevice = scoreTable.rbegin()->second;
-	}
-	else {
-		throw runtime_error("Failed to find a physical device");
-	}
-}
-
-void Application::createLogicalDevice() {
-	QueueFamily indices = findQueueFamilies(physicalDevice);
-	vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentationFamily.value(), indices.transferFamily.value() };
-	float queuePriority = 1.0f;
-
-	for (uint32_t queueFamily : uniqueQueueFamilies) {
-		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = queueFamily;
-		queueCreateInfo.queueCount = 1;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
-		queueCreateInfos.push_back(queueCreateInfo);
-	}
-
-	// Acceleration Structure feature
-	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelStructFeatures{};
-	accelStructFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-	accelStructFeatures.accelerationStructure = VK_TRUE;
-	//accelStructFeatures.pNext = &bufferDeviceAddressFeatures;
-
-	// Ray Tracing Pipeline feature
-	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
-	rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-	rayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
-	rayTracingPipelineFeatures.pNext = &accelStructFeatures;
-
-	//Needed for controlling buffer access
-	VkPhysicalDeviceVulkan12Features features12 = {};
-	features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-	features12.shaderInt8 = VK_TRUE;
-	features12.storageBuffer8BitAccess = VK_TRUE;
-	features12.bufferDeviceAddress = VK_TRUE;
-	features12.pNext = &rayTracingPipelineFeatures;
-
-	// Root device features structure
-	VkPhysicalDeviceFeatures2 deviceFeatures2{};
-	deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	deviceFeatures2.features.shaderInt64 = VK_TRUE;
-	deviceFeatures2.pNext = &features12;
-
-	VkDeviceCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-	createInfo.pQueueCreateInfos = queueCreateInfos.data();
-	createInfo.pEnabledFeatures = VK_NULL_HANDLE;
-
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-	createInfo.pNext = &deviceFeatures2;
-
-	if (enableValidationLayers) {
-    	createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-    	createInfo.ppEnabledLayerNames = validationLayers.data();
-	}
-	else {
-    	createInfo.enabledLayerCount = 0;
-	}
-
-	if(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
-		throw runtime_error("Failed to create logical device");
-	}
-
-	vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-	vkGetDeviceQueue( device, indices.presentationFamily.value(),0, &presentationQueue);
-	vkGetDeviceQueue(device, indices.transferFamily.value(), 0,&transferQueue);
-}
-
 void Application::createSurface() {
 	if(glfwCreateWindowSurface(instance,window, nullptr, &surface) != VK_SUCCESS) {
 		throw runtime_error("Failed to create surface");
@@ -370,7 +181,7 @@ VkExtent2D Application::chooseSwapChainExtent(VkSurfaceCapabilitiesKHR capabilit
 }
 
 void Application::createSwapchain() {
-	SwapChainSupportDetails supportDetails = querySwapChainSupport(physicalDevice);
+	vkf::SwapChainSupportDetails supportDetails = vkf::querySwapChainSupport(logicalDevice.);
 
 	VkSurfaceFormatKHR format = chooseSurfaceFormat(supportDetails.formats);
 	VkPresentModeKHR presentMode = choosePresentMode(supportDetails.presetMode);

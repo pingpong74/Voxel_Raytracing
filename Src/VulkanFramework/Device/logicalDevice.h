@@ -9,24 +9,24 @@
 #include "../../config.h"
 #include "queueFamilies.h"
 #include "physicalDevice.h"
+#include "../buffer.h"
+#include "../commandBuffer.h"
 
 namespace vkf {
-    struct Buffer {
-        VkBuffer handle;
-        VkDeviceMemory bufferMemory;
-    };
-
-    struct Image {
-        VkImage handle;
-        VkImageView view;
-        VkDeviceMemory imgMemory;
-    };
 
     class LogicalDevice {
         public:
 
+        VkDevice handle;
+        VkPhysicalDevice physicalDevice;
+
+        VkQueue graphicsQueue, transferQueue, computeQueue, presentationQueue;
+
         static LogicalDevice createLogicalDevice(VkInstance instance, VkSurfaceKHR surface);
         VkQueue getGraphicsQueue();
+        VkQueue getTransferQueue();
+        VkQueue getComputeQueue();
+        VkQueue getPresentationQueue();
 
         //Buffer
         Buffer createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
@@ -34,13 +34,7 @@ namespace vkf {
         //Command Buffer
         VkCommandBuffer createCommandBuffer();
 
-        //Image
-        Image createImage();
-
         private:
-
-        VkDevice handle;
-        VkPhysicalDevice physicalDevice;
 
         uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     };

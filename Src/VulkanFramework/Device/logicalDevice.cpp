@@ -68,10 +68,6 @@ LogicalDevice LogicalDevice::createLogicalDevice(VkInstance instance, VkSurfaceK
 		throw std::runtime_error("Failed to create logical device");
 	}
 
-	/*vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-	vkGetDeviceQueue(device, indices.presentationFamily.value(),0, &presentationQueue);
-	vkGetDeviceQueue(device, indices.transferFamily.value(), 0,&transferQueue);*/
-
 	LogicalDevice device;
 	device.handle = handle;
 	device.physicalDevice = physicalDevice;

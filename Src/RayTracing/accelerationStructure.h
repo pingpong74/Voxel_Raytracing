@@ -1,7 +1,9 @@
 #include <cstdint>
 #include <vulkan/vulkan_core.h>
 #include <vector>
-#include "../buffer.h"
+
+#include "../VulkanFramework/buffer.h"
+#include "../VulkanFramework/commandBuffer.h"
 #include "../DataStructures/voxel.h"
 
 using namespace std;
@@ -22,7 +24,7 @@ if(!name) { throw std::runtime_error("Failed to load function"); }
 
 struct AccelerationStructure {
     VkAccelerationStructureKHR handle;
-    Buffer buffer;
+    vkf::Buffer buffer;
     bool isTLAS = false;
 };
 
@@ -57,22 +59,22 @@ class AccelerationStructureManager {
     PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = nullptr;
     PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR = nullptr;
 
-    Buffer blasScratchBuffer;
+    vkf::Buffer blasScratchBuffer;
 
-    Buffer blasBuffer;
+    vkf::Buffer blasBuffer;
     int blasOffset = 0;
 
-    Buffer boundingBoxBuffer;
-    Buffer boundingBoxStagingBuffer;
+    vkf::Buffer boundingBoxBuffer;
+    vkf::Buffer boundingBoxStagingBuffer;
     void* boundingBoxStagingBufferMapped;
 
-    Buffer geometryBuffer;
-    Buffer geometryStagingBuffer;
+    vkf::Buffer geometryBuffer;
+    vkf::Buffer geometryStagingBuffer;
     void* geometryStagingBufferMapped;
     int geometryOffset = 0;
 
-    Buffer instanceBuffer;
-    Buffer instanceStagingBuffer;
+    vkf::Buffer instanceBuffer;
+    vkf::Buffer instanceStagingBuffer;
     void* instanceStagingBufferMapped;
     int instanceOffset = 0;
 

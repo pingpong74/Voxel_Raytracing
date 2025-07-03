@@ -1,8 +1,5 @@
 #pragma once
 
-#include "../buffer.h"
-#include "../commandBuffer.h"
-#include "../DataStructures/dataStructures.h"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan_core.h>
 #include <stdexcept>
@@ -10,6 +7,13 @@
 #include <fstream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "../VulkanFramework/Device/logicalDevice.h"
+
+#include "../VulkanFramework/buffer.h"
+#include "../VulkanFramework/commandBuffer.h"
+
+#include "../DataStructures/dataStructures.h"
 #include "accelerationStructure.h"
 #include "../Camera.h"
 #include "model.h"
@@ -29,7 +33,7 @@ class RayTracer {
 
     Camera cam;
 
-    void createRayTracer(VkDevice _device, VkPhysicalDevice _physicalDevice, VkQueue _graphicsQueue, VkCommandPool _graphicsPool, VkQueue _transferQueue, VkCommandPool _transferPool, VkSurfaceFormatKHR format, VkExtent2D extent, GLFWwindow* window);
+    void createRayTracer(vkf::LogicalDevice* _logicalDevice, VkCommandPool _graphicsPool, VkCommandPool _transferPool, VkSurfaceFormatKHR format, VkExtent2D extent, GLFWwindow* window);
     void drawFrame(CommandBuffer commandBuffer, VkImage swapchainImage, float deltaTime);
     void cleanup();
 
@@ -38,14 +42,10 @@ class RayTracer {
 
     private:
 
-    VkDevice device;
-    VkPhysicalDevice physicalDevice;
+    vkf::LogicalDevice* logicalDevice;
 
     VkCommandPool graphicsPool;
-    VkQueue graphicsQueue;
-
     VkCommandPool transferPool;
-    VkQueue transferQueue;
 
     GLFWwindow* window;
 
@@ -88,7 +88,7 @@ class RayTracer {
     void setImgLayout(CommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageSubresourceRange subResourcesRange, VkPipelineStageFlags srcFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VkPipelineStageFlags dstFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
     //Shader Binding table
-    Buffer sbtBuffer;
+    vkf::Buffer sbtBuffer;
 
     VkStridedDeviceAddressRegionKHR rgenRegion{};
     VkStridedDeviceAddressRegionKHR missRegion{};
@@ -105,7 +105,7 @@ class RayTracer {
     void createImage(VkSurfaceFormatKHR format, VkExtent2D extent);
 
     //Creaete the camera buffers for the descriptor
-    Buffer ubo;
+    vkf::Buffer ubo;
     void createUBOBuffer();
 
     //Creation of descriptor sets

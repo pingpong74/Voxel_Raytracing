@@ -8,12 +8,11 @@
 #include <stdexcept>
 #include <vector>
 #include <cstring>
-#include <map>
-#include <optional>
-#include <set>
 #include <limits>
 #include <algorithm>
 #include <fstream>
+
+#include "VulkanFramework/Device/logicalDevice.h"
 
 #define FRAME_IN_FLIGHT 2
 
@@ -24,34 +23,7 @@ using namespace std;
 const uint32_t width = 800;
 const uint32_t height = 600;
 
-const vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation"};
-const vector<const char*> deviceExtensions = { "VK_KHR_swapchain",
-    "VK_KHR_acceleration_structure",
-    "VK_KHR_ray_tracing_pipeline",
-    "VK_KHR_ray_query",
-    "VK_KHR_pipeline_library",
-    "VK_KHR_deferred_host_operations",
-    "VK_KHR_8bit_storage"
-};
-
 const bool enableValidationLayers = true;
-
-struct QueueFamily {
-    optional<uint32_t> graphicsFamily;
-    optional<uint32_t> presentationFamily;
-    optional<uint32_t> transferFamily;
-    //optional<uint32_t> computeFamily;
-
-    bool isComplete() {
-        return graphicsFamily.has_value() && presentationFamily.has_value() && transferFamily.has_value();
-    }
-};
-
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    vector<VkSurfaceFormatKHR> formats;
-    vector<VkPresentModeKHR> presetMode;
-};
 
 struct FrameData {
     VkFence inFlightFence;
@@ -78,14 +50,12 @@ class Application {
     GLFWwindow* window;
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
-    VkDevice device;
 
-    VkQueue graphicsQueue;
-    VkQueue presentationQueue;
-    VkQueue transferQueue;
 
-    VkPhysicalDevice physicalDevice;
     VkSurfaceKHR surface;
+
+    vkf::LogicalDevice logicalDevice;
+
     VkSurfaceFormatKHR swapchainFormat;
     VkPresentModeKHR swapchainPresentMode;
     VkExtent2D swapchainExtent;
@@ -114,7 +84,7 @@ class Application {
     //Sends the error msg to console
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
 		if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-			cerr << "validationlayer:" << pCallbackData->pMessage << endl;
+			std::cerr << "validationlayer:" << pCallbackData->pMessage << endl;
 		}
 
 		return VK_FALSE;
@@ -128,14 +98,6 @@ class Application {
 
     void create_instance();
     void setupDebugMessenger();
-
-    QueueFamily findQueueFamilies(VkPhysicalDevice device);
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice dev);
-    bool checkDeviceExtensionsSupport(VkPhysicalDevice dev);
-    int rateSuitability(VkPhysicalDevice dev);
-    void pickPhysicalDevices();
-
-    void createLogicalDevice();
 
     void createSurface();
 
