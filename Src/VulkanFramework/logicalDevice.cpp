@@ -1,4 +1,4 @@
-#include "logicalDevice.h"
+#include "../../includes/VulkanFramework/logicalDevice.h"
 #include <vulkan/vulkan_core.h>
 
 using namespace vkf;
@@ -62,9 +62,7 @@ void LogicalDevice::createLogicalDevice(VkInstance instance, VkSurfaceKHR surfac
         createInfo.enabledLayerCount = 0;
     #endif
 
-	if(vkCreateDevice(physicalDevice, &createInfo, nullptr, &handle) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create logical device");
-	}
+	VK_CHECK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &handle), "Failed to create logical device")
 
 	vkGetDeviceQueue(handle, indices.graphicsFamily.value(), 0, &graphicsQueue);
 	vkGetDeviceQueue(handle, indices.presentationFamily.value(), 0, &presentationQueue);
@@ -72,9 +70,7 @@ void LogicalDevice::createLogicalDevice(VkInstance instance, VkSurfaceKHR surfac
 	vkGetDeviceQueue(handle, indices.computeFamily.value(), 0, &computeQueue);
 }
 
-Buffer LogicalDevice::createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
-    VkBuffer buffer;
-    VkDeviceMemory bufferMemory;
+void LogicalDevice::createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& bufferHandle, VkDeviceMemory& bufferMemory) {
 
     VkBufferCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -82,12 +78,10 @@ Buffer LogicalDevice::createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMe
     createInfo.usage = usage;
     createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if(vkCreateBuffer(handle, &createInfo, nullptr, &buffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create buffer");
-    }
+    VK_CHECK(vkCreateBuffer(handle, &createInfo, nullptr, &bufferHandle), "Failed to create buffer")
 
     VkMemoryRequirements memoryRequirements;
-    vkGetBufferMemoryRequirements(handle, buffer, &memoryRequirements);
+    vkGetBufferMemoryRequirements(handle, bufferHandle, &memoryRequirements);
 
 
     VkMemoryAllocateFlagsInfo flagInfo{};
@@ -100,46 +94,27 @@ Buffer LogicalDevice::createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMe
     memoryAllocInfo.pNext = &flagInfo;
     memoryAllocInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties);
 
-    if(vkAllocateMemory(handle, &memoryAllocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate memory for buffer");
-    }
+    VK_CHECK(vkAllocateMemory(handle, &memoryAllocInfo, nullptr, &bufferMemory), "failed to allocate memory for buffer")
 
-    if(vkBindBufferMemory(handle, buffer, bufferMemory, 0) != VK_SUCCESS ) {
-        throw std::runtime_error("Failed to bind buffer memory");
-    }
-
-    return { buffer, bufferMemory};
+    VK_CHECK(vkBindBufferMemory(handle, bufferHandle, bufferMemory, 0), "Failed to bind buffer memory")
 }
 
-VkDeviceAddress LogicalDevice::getBufferAddress(Buffer buffer) {
-    VkBufferDeviceAddressInfo addressInfo{};
-    addressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-    addressInfo.buffer = buffer.handle;
-
-    return vkGetBufferDeviceAddress(handle, &addressInfo);
+void LogicalDevice::destroyBuffer(VkBuffer buffer, VkDeviceMemory bufferMemory) {
+    vkDestroyBuffer(handle, buffer, nullptr);
+    vkFreeMemory(handle, bufferMemory, nullptr);
 }
 
-void LogicalDevice::destroyBuffer(Buffer buffer) {
-    vkDestroyBuffer(handle, buffer.handle, nullptr);
-    vkFreeMemory(handle, buffer.bufferMemory, nullptr);
+void LogicalDevice::createCommandPool(uint32_t queueFamilyIndex, VkCommandPool& commandPool, VkCommandPoolCreateFlags flags) {
+    VkCommandPoolCreateInfo poolCreateInfo{};
+	poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolCreateInfo.flags = flags;
+	poolCreateInfo.queueFamilyIndex = queueFamilyIndex;
+
+	VK_CHECK(vkCreateCommandPool(handle, &poolCreateInfo, nullptr, &commandPool), "Failed to create command pool")
 }
 
-CommandBuffer LogicalDevice::createCommandBuffer(VkCommandPool commandPool) {
-    VkCommandBuffer commandBuffer;
-
-    VkCommandBufferAllocateInfo allocInfo{};
-
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandPool;
-    allocInfo.pNext = nullptr;
-
-    VK_CHECK(vkAllocateCommandBuffers(handle, &allocInfo, &commandBuffer), "Failed to create command Buffer")
-
-    return { commandBuffer, commandPool };
-}
-
-void LogicalDevice::destroyCommandBuffer(CommandBuffer commandBuffer) {
-    vkFreeCommandBuffers(handle, commandBuffer.commandPool, 1, nullptr);
+void LogicalDevice::destroyCommandPool(VkCommandPool commandPool) {
+    vkDestroyCommandPool(handle, commandPool, nullptr);
 }
 
 uint32_t LogicalDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {

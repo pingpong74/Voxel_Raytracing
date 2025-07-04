@@ -1,4 +1,36 @@
-#include "physicalDevice.h"
+#include "../../includes/VulkanFramework/physicalDevice.h"
+
+vkf::QueueFamily findQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+    vkf::QueueFamily queueFamily;
+
+    uint32_t queueFamilyCount;
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilyProperties.data());
+
+    int i = 0;
+
+    for(const auto& properties : queueFamilyProperties) {
+        VkBool32 presetationQueuePresent = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presetationQueuePresent);
+
+        if(properties.queueFlags & VK_QUEUE_GRAPHICS_BIT) queueFamily.graphicsFamily = i;
+
+        if(presetationQueuePresent) queueFamily.presentationFamily = i;
+
+        if(properties.queueFlags & VK_QUEUE_TRANSFER_BIT && !(properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)) queueFamily.transferFamily = i;
+
+        if(properties.queueFlags & VK_QUEUE_COMPUTE_BIT && !(properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)) queueFamily.computeFamily = i;
+
+        if(queueFamily.isComplete()) break;
+
+        i++;
+
+    }
+
+    return queueFamily;
+}
 
 vkf::SwapChainSupportDetails vkf::querySwapChainSupport(VkPhysicalDevice dev, VkSurfaceKHR surface) {
     vkf::SwapChainSupportDetails details;

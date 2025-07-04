@@ -35,13 +35,16 @@ namespace vkf {
         Buffer tlasBuffer;
         Buffer scratchBuffer;
 
+        Buffer instanceBuffer;
+        Buffer instanceStagingBuffer;
+
         std::vector<BottomLevelAccelerationStructure> blases;
         std::vector<VkTransformMatrixKHR> transforms;
 
         CommandBuffer commandBuffer;
 
         static TopLevelAccelerationStructure createTopLevelAccelerationStructure(LogicalDevice* logicalDevice, VkCommandPool buildPool, std::vector<BottomLevelAccelerationStructure>, std::vector<VkTransformMatrixKHR> transforms);
-        void updateTopLevelAccelerationStructure();
+        void updateTopLevelAccelerationStructure(LogicalDevice* logicalDevice, VkCommandPool buildPool, std::vector<BottomLevelAccelerationStructure> bottomLevelStructures, std::vector<VkTransformMatrixKHR> transforms);
         void destroy();
     };
 }

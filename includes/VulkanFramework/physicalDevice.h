@@ -6,11 +6,25 @@
 #include <string>
 #include <map>
 #include <stdexcept>
+#include <optional>
 
 #include "../../config.h"
-#include "queueFamilies.h"
 
 namespace vkf {
+
+    struct QueueFamily {
+        std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentationFamily;
+        std::optional<uint32_t> transferFamily;
+        std::optional<uint32_t> computeFamily;
+
+        inline bool isComplete() {
+            return graphicsFamily.has_value() && presentationFamily.has_value() && transferFamily.has_value() && computeFamily.has_value();
+        }
+
+        static QueueFamily findQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+    };
+
     struct SwapChainSupportDetails {
         VkSurfaceCapabilitiesKHR capabilities;
         std::vector<VkSurfaceFormatKHR> formats;
