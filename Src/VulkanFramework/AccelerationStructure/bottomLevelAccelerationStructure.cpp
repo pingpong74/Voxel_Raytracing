@@ -71,3 +71,15 @@ std::vector<BottomLevelAccelerationStructure> BottomLevelAccelerationStructure::
 
     return accelerationStructures;
 }
+
+VkDeviceAddress BottomLevelAccelerationStructure::getAddress(LogicalDevice* logicalDevice) {
+    VkAccelerationStructureDeviceAddressInfoKHR addressInfo{};
+    addressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+    addressInfo.accelerationStructure = handle;
+
+    return vkGetAccelerationStructureDeviceAddressKHR(logicalDevice->handle, &addressInfo);
+}
+
+void BottomLevelAccelerationStructure::destroy(LogicalDevice* logicalDevice) {
+    vkDestroyAccelerationStructureKHR(logicalDevice->handle, handle, nullptr);
+}

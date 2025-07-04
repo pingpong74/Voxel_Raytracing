@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan_core.h>
 #include <vector>
+#include <glm/vec3.hpp>
 
 #include "../Device/logicalDevice.h"
 #include "../buffer.h"
@@ -25,7 +26,8 @@ namespace vkf {
         VkAccelerationStructureKHR handle;
 
         static std::vector<BottomLevelAccelerationStructure> createBottomLevelAccelerationStructure(CommandBuffer commandBuffer, LogicalDevice* logicalDevice, BottomLevelAccelerationStructureBuildInfo* blasBuldInfo, uint32_t count);
-        void destroy();
+        VkDeviceAddress getAddress(LogicalDevice* logicalDevice);
+        void destroy(LogicalDevice* logicalDevice);
     };
 
     struct TopLevelAccelerationStructure {
@@ -33,7 +35,12 @@ namespace vkf {
         Buffer tlasBuffer;
         Buffer scratchBuffer;
 
-        static TopLevelAccelerationStructure createTopLevelAccelerationStructure();
+        std::vector<BottomLevelAccelerationStructure> blases;
+        std::vector<VkTransformMatrixKHR> transforms;
+
+        CommandBuffer commandBuffer;
+
+        static TopLevelAccelerationStructure createTopLevelAccelerationStructure(LogicalDevice* logicalDevice, VkCommandPool buildPool, std::vector<BottomLevelAccelerationStructure>, std::vector<VkTransformMatrixKHR> transforms);
         void updateTopLevelAccelerationStructure();
         void destroy();
     };
