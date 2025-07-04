@@ -2,8 +2,7 @@
 #include <vulkan/vulkan_core.h>
 #include <vector>
 
-#include "../VulkanFramework/buffer.h"
-#include "../VulkanFramework/commandBuffer.h"
+#include "../VulkanFramework/vulkanFramework.h"
 #include "../DataStructures/voxel.h"
 
 using namespace std;
@@ -31,7 +30,7 @@ struct AccelerationStructure {
 class AccelerationStructureManager {
     public:
 
-    void create(VkDevice _device, VkPhysicalDevice _physicalDevice, VkQueue _buildQueue, VkCommandPool _buildPool, VkQueue transferQueue, VkCommandPool transferPool);
+    void create(vkf::LogicalDevice* logicalDevice, VkCommandPool _buildPool, VkCommandPool transferPool);
 
     VkBuffer getInstanceBuffer();
     VkAccelerationStructureKHR getTopLevelAccelrationStructure();
@@ -44,13 +43,9 @@ class AccelerationStructureManager {
 
     private:
 
-    VkDevice device;
-    VkPhysicalDevice physicalDevice;
+    vkf::LogicalDevice* logicalDevice;
 
-    VkQueue buildQueue;
     VkCommandPool buildPool;
-
-    VkQueue transferQueue;
     VkCommandPool transferPool;
 
     PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = nullptr;

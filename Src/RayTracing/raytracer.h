@@ -111,7 +111,7 @@ class RayTracer {
     void createShaderBindingTable();
 
     //Rendering code
-    void recordCommandBuffer(CommandBuffer commandBuffer, VkImage swapchainImage);
+    void recordCommandBuffer(CommandBuffer commandBuffer, VkImage swapchainImage, float deltaTime);
 
     //FINISHHHHHH
     void destroyAccelerationStructure(AccelerationStructure acccelerationStructure);

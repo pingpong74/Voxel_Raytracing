@@ -2,6 +2,7 @@
 
 #define VALIDATION_LAYERS_ENABLED true
 #include <vector>
+#include <stdexcept>
 
 const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation"};
 const std::vector<const char*> deviceExtensions = { "VK_KHR_swapchain",
@@ -12,3 +13,14 @@ const std::vector<const char*> deviceExtensions = { "VK_KHR_swapchain",
     "VK_KHR_deferred_host_operations",
     "VK_KHR_8bit_storage"
 };
+
+#if VALIDATION_LAYERS_ENABLED
+
+    #define VK_CHECK(name, err) \
+    if(name != VK_SUCCESS) { throw std::runtime_error(err); }
+
+#else
+    #define VK_CHECK(name, err) \
+    name;
+
+#endif

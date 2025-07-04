@@ -1,10 +1,10 @@
 #include "raytracer.h"
-#include <cmath>
 #include <cstdint>
 #include <glm/detail/compute_common.hpp>
 #include <glm/matrix.hpp>
 #include <iostream>
 #include <stdexcept>
+#include <sys/types.h>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
@@ -237,9 +237,8 @@ void RayTracer::createImage(VkSurfaceFormatKHR format, VkExtent2D extent) {
 
     VK_CHECK(vkCreateImageView(logicalDevice->handle, &viewCreateInfo, nullptr, &frameView), "Failed to create Image view");
 
-    CommandBuffer commandBuffer;
-    commandBuffer.createCommandBuffer(device, graphicsPool);
-    commandBuffer.beginRecording(true);
+    CommandBuffer commandBuffer = logicalDevice->createCommandBuffer(graphicsPool);
+    commandBuffer.beginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
     setImgLayout(commandBuffer, frame, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
@@ -256,7 +255,7 @@ void RayTracer::createImage(VkSurfaceFormatKHR format, VkExtent2D extent) {
 	VK_CHECK(vkCreateFence(logicalDevice->handle, &fenceInfo, nullptr, &fence), "Failed to create fence");
 
 	// Submit to the queue
-	VK_CHECK(vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence), "Failed to submit to queue");
+	VK_CHECK(vkQueueSubmit(logicalDevice->graphicsQueue, 1, &submitInfo, fence), "Failed to submit to queue");
 	// Wait for the fence to signal that command buffer has finished executing
 	VK_CHECK(vkWaitForFences(logicalDevice->handle, 1, &fence, VK_TRUE, UINT64_MAX), "Queeus failed to comepelte");
 
@@ -497,7 +496,13 @@ void RayTracer::createRayTracingPipeline() {
     VkPipelineLayoutCreateInfo layoutCreateInfo{};
     layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
-    layoutCreateInfo.pushConstantRangeCount = 0;
+    //Push constants
+    VkPushConstantRange pushConstanctRange{};
+    pushConstanctRange.offset = 0;
+    pushConstanctRange.size = sizeof(CameraConstants);
+
+    layoutCreateInfo.pushConstantRangeCount = 1;
+    layoutCreateInfo.pPushConstantRanges = &pushConstanctRange;
 
     //Set the descriptor sets
     layoutCreateInfo.setLayoutCount = 1;
@@ -553,7 +558,7 @@ void RayTracer::createShaderBindingTable() {
     CommandBuffer commandBuffer = logicalDevice->createCommandBuffer(transferPool);
     vkf::Buffer::copyBuffer(sbtStagingBuffer, sbtBuffer, groupCount * baseAligment, commandBuffer);
 
-    VkDeviceAddress sbtAddress = sbtBuffer.getBufferAddress(logicalDevice->handle);
+    VkDeviceAddress sbtAddress = logicalDevice->getBufferAddress(sbtBuffer);
 
     //Finally get the device addresses and shit idk wtf
     rgenRegion.deviceAddress = sbtAddress;
@@ -570,9 +575,9 @@ void RayTracer::createShaderBindingTable() {
 }
 
 void RayTracer::handleResize(VkSurfaceFormatKHR format, VkExtent2D extent) {
-    vkDestroyImage(device, frame, nullptr);
-    vkDestroyImageView(device, frameView, nullptr);
-    vkFreeMemory(device, imgMemory, nullptr);
+    vkDestroyImage(logicalDevice->handle, frame, nullptr);
+    vkDestroyImageView(logicalDevice->handle, frameView, nullptr);
+    vkFreeMemory(logicalDevice->handle, imgMemory, nullptr);
 
     createImage(format, extent);
 
@@ -588,13 +593,20 @@ void RayTracer::handleResize(VkSurfaceFormatKHR format, VkExtent2D extent) {
     imgWrite.dstSet = set0;
     imgWrite.pImageInfo = &imgInfo;
 
-    vkUpdateDescriptorSets(device, 1, &imgWrite, 0, VK_NULL_HANDLE);
+    vkUpdateDescriptorSets(logicalDevice->handle, 1, &imgWrite, 0, VK_NULL_HANDLE);
 }
 
-void RayTracer::recordCommandBuffer(CommandBuffer commandBuffer, VkImage swapchainImage) {
-    commandBuffer.beginRecording(false);
+void RayTracer::recordCommandBuffer(CommandBuffer commandBuffer, VkImage swapchainImage, float deltaTime) {
+    commandBuffer.beginRecording(0);
+
+    CameraConstants camCons{};
+    camCons.inverseProj = glm::inverse(glm::perspective(glm::radians(45.0f), (float)imgExtent.width / (float) imgExtent.height, 0.1f, 100.0f));
+    glm::mat4 view;
+    cam.UpdateCamera(deltaTime, window, &view);
+    camCons.inverseView = glm::inverse(view);
 
     vkCmdBindPipeline(commandBuffer.handle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rayTracingPipeline);
+    vkCmdPushConstants(commandBuffer.handle, rayTracingPipelineLayout, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(CameraConstants), &camCons);
     vkCmdBindDescriptorSets(commandBuffer.handle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rayTracingPipelineLayout, 0, 1, &set0, 0, 0);
 
     vkCmdTraceRaysKHR(commandBuffer.handle, &rgenRegion, &missRegion, &hitRegion, &callRegion, imgExtent.width, imgExtent.height, 1);
@@ -628,24 +640,22 @@ void RayTracer::drawFrame(CommandBuffer commandBuffer, VkImage swapchainImage, f
 
     updateDescriptorSets(deltaTime);
 
-    recordCommandBuffer(commandBuffer, swapchainImage);
+    recordCommandBuffer(commandBuffer, swapchainImage, deltaTime);
 
 }
 
 void RayTracer::cleanup() {
     accelerationStructureManager.cleanup();
 
-    vkDestroyImage(device, frame, nullptr);
-    vkDestroyImageView(device, frameView, nullptr);
-    vkFreeMemory(device, imgMemory, nullptr);
+    vkDestroyImage(logicalDevice->handle, frame, nullptr);
+    vkDestroyImageView(logicalDevice->handle, frameView, nullptr);
+    vkFreeMemory(logicalDevice->handle, imgMemory, nullptr);
 
-    ubo.destroy(device);
+    vkDestroyDescriptorSetLayout(logicalDevice->handle, set0Layout, nullptr);
+    vkDestroyDescriptorPool(logicalDevice->handle, descriptorPool, nullptr);
 
-    vkDestroyDescriptorSetLayout(device, set0Layout, nullptr);
-    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+    logicalDevice->destroyBuffer(sbtBuffer);
 
-    sbtBuffer.destroy(device);
-
-    vkDestroyPipeline(device, rayTracingPipeline, nullptr);
-    vkDestroyPipelineLayout(device, rayTracingPipelineLayout, nullptr);
+    vkDestroyPipeline(logicalDevice->handle, rayTracingPipeline, nullptr);
+    vkDestroyPipelineLayout(logicalDevice->handle, rayTracingPipelineLayout, nullptr);
 }

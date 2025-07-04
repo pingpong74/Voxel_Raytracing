@@ -25,6 +25,7 @@ struct FrameData {
     VkFence inFlightFence;
     VkSemaphore renderFinishSemaphore;
     VkSemaphore imageSemaphore;
+    CommandBuffer commandBuffer;
 };
 
 class Application {
@@ -47,17 +48,17 @@ class Application {
     VkCommandPool graphicsPool;
     VkCommandPool transferPool;
 
-    RayTracer raytracer;
+    //RayTracer raytracer;
 
     static void frameBufferResizeCallBack(GLFWwindow* window, int width, int height) {
         Application* app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
         app->swapchain.recreateSwapchain(width, height);
-        app->raytracer.handleResize(app->swapchain.swapchainFormat, app->swapchain.swapchainExtent);
+        //app->raytracer.handleResize(app->swapchain.swapchainFormat, app->swapchain.swapchainExtent);
     }
 
     static void mousePosCallBack(GLFWwindow *window, double xpos, double ypos) {
         Application* app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
-        app->raytracer.cam.MouseInput(window,  xpos, ypos);
+        //app->raytracer.cam.MouseInput(window,  xpos, ypos);
     }
 
     //Sends the error msg to console
@@ -82,7 +83,7 @@ class Application {
 
     void createCommandPools();
 
-    void main_loop();
+    //void main_loop();
 
     void cleanup();
 };

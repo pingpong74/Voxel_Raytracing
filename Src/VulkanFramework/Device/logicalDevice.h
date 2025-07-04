@@ -6,9 +6,10 @@
 #include <vector>
 #include <set>
 
-#include "../../config.h"
 #include "queueFamilies.h"
 #include "physicalDevice.h"
+
+#include "../../config.h"
 #include "../buffer.h"
 #include "../commandBuffer.h"
 
@@ -26,9 +27,14 @@ namespace vkf {
 
         //Buffer
         Buffer createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+        VkDeviceAddress getBufferAddress(Buffer buffer);
+        void destroyBuffer(Buffer buffer);
 
         //Command Buffer
         CommandBuffer createCommandBuffer(VkCommandPool commandPool);
+        void destroyCommandBuffer(CommandBuffer commandBuffer);
+
+        //Image
 
         void destroy();
 

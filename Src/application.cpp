@@ -13,13 +13,13 @@ void Application::run() {
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
-	swapchain.createSwapchain(&logicalDevice, width, height);
+	swapchain.createSwapchain(&logicalDevice, width, height, surface);
 
 	createCommandPools();
 
-	raytracer.createRayTracer(&logicalDevice, graphicsPool,  transferPool, swapchain.swapchainFormat, swapchain.swapchainExtent, window);
+	//raytracer.createRayTracer(&logicalDevice, graphicsPool,  transferPool, swapchain.swapchainFormat, swapchain.swapchainExtent, window);
 
-    main_loop();
+    //main_loop();
 
     cleanup();
 }
@@ -137,7 +137,7 @@ void Application::setupDebugMessenger() {
 }
 
 void Application::createSurface() {
-	if(glfwCreateWindowSurface(instance,window, nullptr, &surface) != VK_SUCCESS) {
+	if(glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
 		throw runtime_error("Failed to create surface");
 	}
 }
@@ -165,7 +165,7 @@ void Application::createCommandPools() {
 }
 
 ////////////////////////////////////////// IMPROVE SRNCRONIZATION THIS SHIT IS ASSS IMPROVE THIS PLEASEE REMBER TO IMPROVE THIS HAHAHAHAHHAHAHAHAHAHH H HH FU FENUFNFE JFE FUCKKKKKKKKKKKKKKKKKKKKKKKKKKKK ///////////////////////////////////////////////////
-void Application::main_loop() {
+/*void Application::main_loop() {
     FrameData framedata[FRAME_IN_FLIGHT];
 
     VkFenceCreateInfo fenceCreateInfo{};
@@ -183,9 +183,9 @@ void Application::main_loop() {
 
         VK_CHECK(vkCreateSemaphore(logicalDevice.handle, &semaphoreCreateInfo, nullptr, &framedata[i].imageSemaphore), "Failed to create Semaphore");
         VK_CHECK(vkCreateSemaphore(logicalDevice.handle, &semaphoreCreateInfo, nullptr, &framedata[i].renderFinishSemaphore), "Failed to create Semaphore");
-    }
 
-	CommandBuffer commandBuffer = logicalDevice.createCommandBuffer(graphicsPool);
+        framedata[i].commandBuffer = logicalDevice.createCommandBuffer(graphicsPool);
+    }
 
 	float lastFrame = 0;
 	uint32_t frameIndex = 0;
@@ -196,19 +196,15 @@ void Application::main_loop() {
 		float deltaTime = glfwGetTime() - lastFrame;
 		lastFrame = glfwGetTime();
 
-		vkWaitForFences(device, 1, &framedata[frameIndex].inFlightFence, VK_TRUE, UINT64_MAX);
-		vkResetFences(device, 1, &framedata[frameIndex].inFlightFence);
+		vkWaitForFences(logicalDevice.handle, 1, &framedata[frameIndex].inFlightFence, VK_TRUE, UINT64_MAX);
+		vkResetFences(logicalDevice.handle, 1, &framedata[frameIndex].inFlightFence);
 
-		vkResetCommandBuffer(commandBuffer.handle, 0);
+		framedata[frameIndex].commandBuffer.reset();
 
 		uint32_t imageIndex;
-    	resize = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, framedata[frameIndex].imageSemaphore, VK_NULL_HANDLE, &imageIndex);
+    	resize = vkAcquireNextImageKHR(logicalDevice.handle, swapchain.handle, UINT64_MAX, framedata[frameIndex].imageSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-		if(resize == VK_ERROR_OUT_OF_DATE_KHR || resize == VK_SUBOPTIMAL_KHR) {
-			recreateSwapchain();
-		}
-
-		raytracer.drawFrame(commandBuffer, swapchainImages[imageIndex], deltaTime);
+		raytracer.drawFrame(framedata[frameIndex].commandBuffer, swapchain.swapchainImages[imageIndex], deltaTime);
 
 		VkPipelineStageFlags stageFlags[] = {VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR};
 
@@ -219,54 +215,48 @@ void Application::main_loop() {
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = &framedata[frameIndex].imageSemaphore;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer.handle;
+		submitInfo.pCommandBuffers = &framedata[frameIndex].commandBuffer.handle;
 		submitInfo.pWaitDstStageMask = stageFlags;
 
-		VK_CHECK(vkQueueSubmit(graphicsQueue, 1, &submitInfo, framedata[frameIndex].inFlightFence), "Failed to submit to queue");
+		VK_CHECK(vkQueueSubmit(logicalDevice.graphicsQueue, 1, &submitInfo, framedata[frameIndex].inFlightFence), "Failed to submit to queue");
 
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
 		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = &swapchain;
+		presentInfo.pSwapchains = &swapchain.handle;
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = nullptr;
-
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = &framedata[frameIndex].renderFinishSemaphore;
 
-		resize = vkQueuePresentKHR(presentationQueue, &presentInfo);
-
-		if(resize == VK_ERROR_OUT_OF_DATE_KHR) recreateSwapchain();
+		resize = vkQueuePresentKHR(logicalDevice.presentationQueue, &presentInfo);
 
 		cout << "\rFPS : " << (1 / deltaTime);
 
 		frameIndex = frameIndex % FRAME_IN_FLIGHT;
 
-
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
-	vkDeviceWaitIdle(device);
-
-	commandBuffer.freeCommandBuffer(device, graphicsPool);
+	vkDeviceWaitIdle(logicalDevice.handle);
 
 	for(int i = 0; i < FRAME_IN_FLIGHT; i++) {
-        vkDestroyFence(device, framedata[i].inFlightFence, nullptr);
-	    vkDestroySemaphore(device, framedata[i].imageSemaphore, nullptr);
-	    vkDestroySemaphore(device, framedata[i].renderFinishSemaphore, nullptr);
+        vkDestroyFence(logicalDevice.handle, framedata[i].inFlightFence, nullptr);
+	    vkDestroySemaphore(logicalDevice.handle, framedata[i].imageSemaphore, nullptr);
+	    vkDestroySemaphore(logicalDevice.handle, framedata[i].renderFinishSemaphore, nullptr);
+		logicalDevice.destroyCommandBuffer(framedata[i].commandBuffer);
 	}
-}
+	}*/
 
 void Application::cleanup() {
-    raytracer.cleanup();
-	vkDestroyCommandPool(device, graphicsPool, nullptr);
-	vkDestroyCommandPool(device, transferPool, nullptr);
+    //raytracer.cleanup();
+	vkDestroyCommandPool(logicalDevice.handle, graphicsPool, nullptr);
+	vkDestroyCommandPool(logicalDevice.handle, transferPool, nullptr);
 
 	swapchain.destroy();
 
-	logicalDevice.
+	logicalDevice.destroy();
 	vkDestroySurfaceKHR(instance,surface, nullptr);
 
 	if(enableValidationLayers) {

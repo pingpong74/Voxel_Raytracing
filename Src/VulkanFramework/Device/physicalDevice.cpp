@@ -40,7 +40,7 @@ bool vkf::checkDeviceExtensionsSupport(VkPhysicalDevice dev) {
     return requiredExtensions.empty();
 }
 
-int rateSuitability(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+int vkf::rateSuitability(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
 

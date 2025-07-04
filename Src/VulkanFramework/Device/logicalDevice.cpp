@@ -1,6 +1,4 @@
 #include "logicalDevice.h"
-#include "physicalDevice.h"
-#include <glm/vector_relational.hpp>
 #include <vulkan/vulkan_core.h>
 
 using namespace vkf;
@@ -113,6 +111,19 @@ Buffer LogicalDevice::createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMe
     return { buffer, bufferMemory};
 }
 
+VkDeviceAddress LogicalDevice::getBufferAddress(Buffer buffer) {
+    VkBufferDeviceAddressInfo addressInfo{};
+    addressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    addressInfo.buffer = buffer.handle;
+
+    return vkGetBufferDeviceAddress(handle, &addressInfo);
+}
+
+void LogicalDevice::destroyBuffer(Buffer buffer) {
+    vkDestroyBuffer(handle, buffer.handle, nullptr);
+    vkFreeMemory(handle, buffer.bufferMemory, nullptr);
+}
+
 CommandBuffer LogicalDevice::createCommandBuffer(VkCommandPool commandPool) {
     VkCommandBuffer commandBuffer;
 
@@ -122,10 +133,13 @@ CommandBuffer LogicalDevice::createCommandBuffer(VkCommandPool commandPool) {
     allocInfo.commandPool = commandPool;
     allocInfo.pNext = nullptr;
 
+    VK_CHECK(vkAllocateCommandBuffers(handle, &allocInfo, &commandBuffer), "Failed to create command Buffer")
 
+    return { commandBuffer, commandPool };
+}
 
-
-    return { commandBuffer };
+void LogicalDevice::destroyCommandBuffer(CommandBuffer commandBuffer) {
+    vkFreeCommandBuffers(handle, commandBuffer.commandPool, 1, nullptr);
 }
 
 uint32_t LogicalDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
