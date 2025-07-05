@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include "logicalDevice.h"
+#include "logicalDevice.hpp"
 
 namespace vkf {
     class Buffer {
@@ -11,8 +11,6 @@ namespace vkf {
         VkDeviceMemory bufferMemory;
 
         Buffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, LogicalDevice* logicalDevice);
-
-        void resize();
 
         VkDeviceAddress getBufferAddress();
 

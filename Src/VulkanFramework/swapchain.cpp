@@ -1,16 +1,21 @@
-#include "swapchain.h"
-#include <stdexcept>
+#include "../../includes/VulkanFramework/swapchain.hpp"
+#include "../../includes/VulkanFramework/physicalDevice.hpp"
+#include "../../config.h"
+
 #include <vulkan/vulkan_core.h>
+#include <limits>
+#include <algorithm>
 
 using namespace vkf;
 
-void Swapchain::createSwapchain(LogicalDevice* _logicalDevice, int width, int height, VkSurfaceKHR _surface) {
-    logicalDevice = _logicalDevice;
-    if(_surface != nullptr) surface = _surface;
-    if(surface == nullptr) {
-        throw std::runtime_error("no surface provided");
-    }
+Swapchain::Swapchain(LogicalDevice* _logicalDevice, int width, int height, VkSurfaceKHR _surface) {
+    this->logicalDevice = _logicalDevice;
+    this->surface = _surface;
 
+    create(width, height);
+}
+
+void Swapchain::create(int width, int height) {
     SwapChainSupportDetails supportDetails = querySwapChainSupport(logicalDevice->physicalDevice, surface);
 
 	swapchainFormat = chooseSurfaceFormat(supportDetails.formats);
@@ -54,9 +59,7 @@ void Swapchain::createSwapchain(LogicalDevice* _logicalDevice, int width, int he
 
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	if(vkCreateSwapchainKHR(logicalDevice->handle, &createInfo, nullptr, &handle) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create swapchain");
-	}
+	VK_CHECK(vkCreateSwapchainKHR(logicalDevice->handle, &createInfo, nullptr, &handle), "Failed to create swapchain")
 
 	vkGetSwapchainImagesKHR(logicalDevice->handle, handle, &imageCount,nullptr);
 	swapchainImages.resize(imageCount);
@@ -64,26 +67,8 @@ void Swapchain::createSwapchain(LogicalDevice* _logicalDevice, int width, int he
 
 	swapchainImageViews.resize(swapchainImages.size());
 
-	for(size_t i = 0; i < swapchainImages.size(); i++) {
-		VkImageViewCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		createInfo.image = swapchainImages[i];
-		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo.format = swapchainFormat.format;
-		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		createInfo.subresourceRange.baseMipLevel = 0;
-		createInfo.subresourceRange.levelCount = 1;
-		createInfo.subresourceRange.baseArrayLayer = 0;
-		createInfo.subresourceRange.layerCount = 1;
-
-		if(vkCreateImageView(logicalDevice->handle, &createInfo, nullptr, &swapchainImageViews[i]) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create image view");
-		}
-
+	for(int i = 0; i < swapchainImageViews.size(); i++) {
+        logicalDevice->createImageView(swapchainImages[i], swapchainFormat.format, swapchainImageViews[i]);
 	}
 }
 
@@ -117,15 +102,19 @@ VkExtent2D Swapchain::chooseSwapChainExtent(VkSurfaceCapabilitiesKHR capabilitie
 
 void Swapchain::recreateSwapchain(int width, int height) {
     vkDeviceWaitIdle(logicalDevice->handle);
-    destroy();
+    cleanup();
 
-    createSwapchain(logicalDevice, width, height);
+    create(width, height);
 }
 
-void Swapchain::destroy() {
+void Swapchain::cleanup() {
 	for(auto imageView: swapchainImageViews) {
 		vkDestroyImageView(logicalDevice->handle, imageView, nullptr);
 	}
 
 	vkDestroySwapchainKHR(logicalDevice->handle, handle, nullptr);
+}
+
+Swapchain::~Swapchain() {
+    cleanup();
 }

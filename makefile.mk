@@ -1,16 +1,10 @@
-file := Src/main.cpp Src/application.cpp Src/VulkanFramework/Device/logicalDevice.cpp Src/VulkanFramework/Device/physicalDevice.cpp Src/VulkanFramework/Swapchain/swapchain.cpp
-shaders := Shaders/intersection.rint Shaders/closestHit.rchit Shaders/miss.rmiss Shaders/raygen.rgen
+file := Src/main.cpp Src/application.cpp Src/window.cpp Src/Renderer/renderer.cpp Src/VulkanFramework/instance.cpp Src/VulkanFramework/logicalDevice.cpp Src/VulkanFramework/physicalDevice.cpp Src/VulkanFramework/swapchain.cpp
 
 cFlags := -std=c++17 -O2
 ldFlags := -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
 
 application: $(file) $(shaders)
-	rm -f application Shaders/raygen.spv Shaders/closestHit.spv Shaders/miss.spv Shaders/intersection.spv
-	glslc --target-spv=spv1.5 Shaders/raygen.rgen -o Shaders/raygen.spv
-	glslc --target-spv=spv1.5 Shaders/closestHit.rchit -o Shaders/closestHit.spv
-	glslc --target-spv=spv1.5 Shaders/miss.rmiss -o Shaders/miss.spv
-	glslc --target-spv=spv1.5 Shaders/intersection.rint -o Shaders/intersection.spv
 	g++ $(cFlags) -o application $(file) $(ldFlags)
 
 clean:
-	rm -f application Shaders/raygen.spv Shaders/closestHit.spv Shaders/miss.spv Shaders/intersection.spv
+	rm -f application

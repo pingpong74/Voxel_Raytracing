@@ -1,6 +1,13 @@
 #include "../../includes/VulkanFramework/physicalDevice.hpp"
 
-vkf::QueueFamily findQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+#include <set>
+#include <string>
+#include <map>
+#include <stdexcept>
+
+#include "../../config.h"
+
+vkf::QueueFamily vkf::QueueFamily::findQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     vkf::QueueFamily queueFamily;
 
     uint32_t queueFamilyCount;
@@ -93,17 +100,17 @@ int vkf::rateSuitability(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) 
     return score;
 }
 
-VkPhysicalDevice vkf::pickPhysicalDevices(VkInstance instance, VkSurfaceKHR surface) {
+VkPhysicalDevice vkf::pickPhysicalDevices(vkf::Instance* instance) {
     uint32_t deviceCount;
-    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(instance->handle, &deviceCount, nullptr);
 
     std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-    vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices.data());
+    vkEnumeratePhysicalDevices(instance->handle, &deviceCount, physicalDevices.data());
 
     std::multimap<int, VkPhysicalDevice> scoreTable;
 
     for(const auto& devices : physicalDevices) {
-        int score = vkf::rateSuitability(devices, surface);
+        int score = vkf::rateSuitability(devices, instance->surface);
         scoreTable.insert(std::make_pair(score, devices));
     }
 

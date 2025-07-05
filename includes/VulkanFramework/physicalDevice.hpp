@@ -2,13 +2,9 @@
 
 #include <vulkan/vulkan_core.h>
 #include <vector>
-#include <set>
-#include <string>
-#include <map>
-#include <stdexcept>
 #include <optional>
 
-#include "../../config.h"
+#include "instance.hpp"
 
 namespace vkf {
 
@@ -37,5 +33,5 @@ namespace vkf {
 
     int rateSuitability(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
-    VkPhysicalDevice pickPhysicalDevices(VkInstance instance, VkSurfaceKHR surface);
+    VkPhysicalDevice pickPhysicalDevices(Instance*);
 };

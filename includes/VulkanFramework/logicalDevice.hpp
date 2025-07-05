@@ -2,13 +2,8 @@
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
-#include <stdexcept>
-#include <vector>
-#include <set>
 
-#include "physicalDevice.hpp"
-
-#include "../../config.h"
+#include "instance.hpp"
 
 
 namespace vkf {
@@ -21,8 +16,8 @@ namespace vkf {
 
         VkQueue graphicsQueue, transferQueue, computeQueue, presentationQueue;
 
-        void createLogicalDevice(VkInstance , VkSurfaceKHR);
-        void destroy();
+        LogicalDevice(Instance*);
+        ~LogicalDevice();
 
         //Buffer
         void createBuffer(uint32_t , VkBufferUsageFlags , VkMemoryPropertyFlags , VkBuffer& , VkDeviceMemory&);
@@ -31,13 +26,15 @@ namespace vkf {
         //Image
         void createImage(VkFormat, VkExtent2D, VkImage&, VkDeviceMemory&);
         void createImageView(VkImage, VkFormat, VkImageView&);
-        void destroyImage(VkImage, VkDeviceMemory);
+        void destroyImage(VkImage, VkDeviceMemory, VkImageView);
 
         //CommandPool
         void createCommandPool(uint32_t, VkCommandPool&, VkCommandPoolCreateFlags);
         void destroyCommandPool(VkCommandPool);
 
         private:
+
+        Instance* instance;
 
         uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
     };

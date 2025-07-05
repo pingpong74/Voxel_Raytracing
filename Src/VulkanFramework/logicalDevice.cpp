@@ -1,12 +1,22 @@
 #include "../../includes/VulkanFramework/logicalDevice.hpp"
 #include <vulkan/vulkan_core.h>
 
+#include <stdexcept>
+#include <vector>
+#include <set>
+
+#include "../../includes/VulkanFramework/physicalDevice.hpp"
+
+#include "../../config.h"
+
 using namespace vkf;
 
-void LogicalDevice::createLogicalDevice(VkInstance instance, VkSurfaceKHR surface) {
-    physicalDevice = vkf::pickPhysicalDevices(instance,  surface);
+LogicalDevice::LogicalDevice(Instance* instance) {
+    this->instance = instance;
 
-    QueueFamily indices = QueueFamily::findQueueFamilies(physicalDevice, surface);
+    physicalDevice = pickPhysicalDevices(instance);
+
+    QueueFamily indices = QueueFamily::findQueueFamilies(physicalDevice, instance->surface);
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentationFamily.value(), indices.transferFamily.value(), indices.computeFamily.value() };
 	float queuePriority = 1.0f;
@@ -168,7 +178,8 @@ void LogicalDevice::createImageView(VkImage image, VkFormat format, VkImageView&
     VK_CHECK(vkCreateImageView(handle, &viewCreateInfo, nullptr, &imageView), "Failed to create Image view");
 }
 
-void LogicalDevice::destroyImage(VkImage image, VkDeviceMemory imgMemory) {
+void LogicalDevice::destroyImage(VkImage image, VkDeviceMemory imgMemory, VkImageView imageView) {
+    vkDestroyImageView(handle, imageView, nullptr);
     vkDestroyImage(handle, image, nullptr);
     vkFreeMemory(handle, imgMemory, nullptr);
 }
@@ -186,6 +197,6 @@ uint32_t LogicalDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlag
     throw std::runtime_error("Failed to find suitable memory type for the buffer");
 }
 
-void LogicalDevice::destroy() {
+LogicalDevice::~LogicalDevice() {
     vkDestroyDevice(handle, nullptr);
 }

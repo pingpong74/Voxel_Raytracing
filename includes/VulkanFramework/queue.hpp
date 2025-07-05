@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logicalDevice.h"
+#include "logicalDevice.hpp"
 #include <vulkan/vulkan_core.h>
 
 namespace vkf {
