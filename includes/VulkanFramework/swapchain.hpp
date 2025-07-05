@@ -1,11 +1,9 @@
 #pragma once
 
 #include <vector>
-#include <limits>
-#include <algorithm>
 #include <vulkan/vulkan_core.h>
 
-#include "../Device/logicalDevice.h"
+#include "logicalDevice.hpp"
 
 namespace vkf {
     class Swapchain {

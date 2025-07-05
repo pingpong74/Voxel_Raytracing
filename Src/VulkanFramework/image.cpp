@@ -1,0 +1,98 @@
+#include "../../includes/VulkanFramework/image.hpp"
+#include <vulkan/vulkan_core.h>
+
+using namespace vkf;
+
+Image::Image(LogicalDevice* logicalDevice, VkFormat format, VkExtent2D extent) {
+    this->logicalDevice = logicalDevice;
+    this->format = format;
+    this->extent = extent;
+    this->currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    logicalDevice->createImage(format, extent, handle, imageMemory);
+    logicalDevice->createImageView(handle, format, view);
+}
+
+void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout, VkImageSubresourceRange subResourcesRange, VkPipelineStageFlags srcFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VkPipelineStageFlags dstFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT) {
+    VkImageMemoryBarrier memoryBarrier;
+    memoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    memoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    memoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+    memoryBarrier.oldLayout = currentLayout;
+    memoryBarrier.newLayout = newLayout;
+
+    memoryBarrier.image = handle;
+    memoryBarrier.subresourceRange = subResourcesRange;
+
+    switch (currentLayout) {
+
+        case VK_IMAGE_LAYOUT_UNDEFINED:
+            memoryBarrier.srcAccessMask = 0;
+            break;
+
+        case VK_IMAGE_LAYOUT_PREINITIALIZED:
+            memoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+            memoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+            memoryBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+            memoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+            memoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+            memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            break;
+
+        default:
+            break;
+    }
+
+    switch(newLayout) {
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+			memoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+			memoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+			memoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+			memoryBarrier.dstAccessMask = memoryBarrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			if (memoryBarrier.srcAccessMask == 0) {
+				memoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+			}
+			memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			break;
+
+        default:
+            break;
+    }
+
+    currentLayout = newLayout;
+
+    memoryBarrier.pNext = nullptr;
+    vkCmdPipelineBarrier(commandBuffer, srcFlags, dstFlags, 0, 0, nullptr, 0, nullptr, 1, &memoryBarrier);
+}
+
+Image::~Image() {
+    logicalDevice->destroyImage(handle, imageMemory);
+}

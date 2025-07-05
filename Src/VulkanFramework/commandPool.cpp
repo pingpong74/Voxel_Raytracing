@@ -1,4 +1,4 @@
-#include "../../includes/VulkanFramework/commandPool.h"
+#include "../../includes/VulkanFramework/commandPool.hpp"
 #include <vulkan/vulkan_core.h>
 
 using namespace vkf;

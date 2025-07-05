@@ -1,4 +1,4 @@
-#include "../../includes/VulkanFramework/buffer.h"
+#include "../../includes/VulkanFramework/buffer.hpp"
 
 using namespace vkf;
 

@@ -1,4 +1,4 @@
-#include "../../includes/VulkanFramework/logicalDevice.h"
+#include "../../includes/VulkanFramework/logicalDevice.hpp"
 #include <vulkan/vulkan_core.h>
 
 using namespace vkf;
@@ -115,6 +115,62 @@ void LogicalDevice::createCommandPool(uint32_t queueFamilyIndex, VkCommandPool& 
 
 void LogicalDevice::destroyCommandPool(VkCommandPool commandPool) {
     vkDestroyCommandPool(handle, commandPool, nullptr);
+}
+
+void LogicalDevice::createImage(VkFormat format, VkExtent2D extent, VkImage& image, VkDeviceMemory& imgMemory) {
+    VkImageCreateInfo imgCreateInfo{};
+    imgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imgCreateInfo.format = format;
+    imgCreateInfo.extent = {extent.width, extent.height, 1};
+    imgCreateInfo.arrayLayers = 1;
+    imgCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imgCreateInfo.mipLevels = 1;
+    imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imgCreateInfo.pQueueFamilyIndices = nullptr;
+    imgCreateInfo.queueFamilyIndexCount = 0;
+    imgCreateInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    imgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imgCreateInfo.flags = 0;
+
+    VK_CHECK(vkCreateImage(handle, &imgCreateInfo, nullptr, &image), "Faield to create Image");
+
+    VkMemoryRequirements memoryRequirements{};
+    vkGetImageMemoryRequirements(handle, image, &memoryRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memoryRequirements.size;
+    allocInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits,  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    VK_CHECK(vkAllocateMemory(handle, &allocInfo, nullptr, &imgMemory), "Failed to allocate image memory");
+
+    VK_CHECK(vkBindImageMemory(handle, image, imgMemory, 0), "Failed to bind Image memory");
+}
+
+void LogicalDevice::createImageView(VkImage image, VkFormat format, VkImageView& imageView) {
+    VkImageViewCreateInfo viewCreateInfo{};
+    viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewCreateInfo.image = image;
+    viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewCreateInfo.format = format;
+	viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+	viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewCreateInfo.subresourceRange.baseMipLevel = 0;
+	viewCreateInfo.subresourceRange.levelCount = 1;
+	viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+	viewCreateInfo.subresourceRange.layerCount = 1;
+
+    VK_CHECK(vkCreateImageView(handle, &viewCreateInfo, nullptr, &imageView), "Failed to create Image view");
+}
+
+void LogicalDevice::destroyImage(VkImage image, VkDeviceMemory imgMemory) {
+    vkDestroyImage(handle, image, nullptr);
+    vkFreeMemory(handle, imgMemory, nullptr);
 }
 
 uint32_t LogicalDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {

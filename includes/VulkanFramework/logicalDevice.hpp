@@ -6,14 +6,12 @@
 #include <vector>
 #include <set>
 
-#include "physicalDevice.h"
+#include "physicalDevice.hpp"
 
 #include "../../config.h"
 
 
 namespace vkf {
-
-    struct CommandBuffer;
 
     class LogicalDevice {
         public:
@@ -24,25 +22,23 @@ namespace vkf {
         VkQueue graphicsQueue, transferQueue, computeQueue, presentationQueue;
 
         void createLogicalDevice(VkInstance , VkSurfaceKHR);
+        void destroy();
 
         //Buffer
         void createBuffer(uint32_t , VkBufferUsageFlags , VkMemoryPropertyFlags , VkBuffer& , VkDeviceMemory&);
         void destroyBuffer(VkBuffer , VkDeviceMemory);
 
         //Image
-        void createImage();
-        void destroyImage();
+        void createImage(VkFormat, VkExtent2D, VkImage&, VkDeviceMemory&);
+        void createImageView(VkImage, VkFormat, VkImageView&);
+        void destroyImage(VkImage, VkDeviceMemory);
 
         //CommandPool
         void createCommandPool(uint32_t, VkCommandPool&, VkCommandPoolCreateFlags);
         void destroyCommandPool(VkCommandPool);
 
-        //Image
-
-        void destroy();
-
         private:
 
-        uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+        uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
     };
 }

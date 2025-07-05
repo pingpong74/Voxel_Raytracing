@@ -1,7 +1,11 @@
-#include "../../includes/VulkanFramework/queue.h"
+#include "../../includes/VulkanFramework/queue.hpp"
 #include <vulkan/vulkan_core.h>
 
 using namespace vkf;
+
+Queue::Queue(LogicalDevice* logicalDevice, uint32_t familyIndex) {
+    vkGetDeviceQueue(logicalDevice->handle, familyIndex, 0, &handle);
+}
 
 void Queue::submit(const VkSubmitInfo* submits, uint32_t submitCount, VkFence fence = VK_NULL_HANDLE) {
     VK_CHECK(vkQueueSubmit(handle, submitCount, submits, fence), "Failed to submit to queue")

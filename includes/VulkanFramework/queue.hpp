@@ -9,11 +9,13 @@ namespace vkf {
 
         VkQueue handle;
 
-        Queue();
+        Queue(LogicalDevice* , uint32_t);
 
         void submit(const VkSubmitInfo*, uint32_t, VkFence);
         void present(VkPresentInfoKHR*);
         void waitIdle();
+
+        ~Queue() = default;
 
         private:
 

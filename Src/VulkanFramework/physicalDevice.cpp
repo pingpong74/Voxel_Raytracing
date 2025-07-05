@@ -1,4 +1,4 @@
-#include "../../includes/VulkanFramework/physicalDevice.h"
+#include "../../includes/VulkanFramework/physicalDevice.hpp"
 
 vkf::QueueFamily findQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     vkf::QueueFamily queueFamily;
