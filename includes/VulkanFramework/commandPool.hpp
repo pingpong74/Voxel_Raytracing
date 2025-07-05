@@ -11,7 +11,7 @@ namespace vkf {
 
         VkCommandPool handle;
 
-        CommandPool(LogicalDevice*, uint32_t, VkCommandPoolCreateFlags);
+        CommandPool(LogicalDevice*, uint32_t, VkCommandPoolCreateFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
         VkCommandBuffer allocateCommandBuffer(VkCommandBufferLevel);
         void freeCommandBuffer(VkCommandBuffer);

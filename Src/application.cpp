@@ -1,4 +1,4 @@
-#include "../includes/application.hpp"
+#include "application.hpp"
 #include "../includes/Renderer/renderer.hpp"
 
 Application::Application() : window(), renderer(window.handle, window.width, window.height) {

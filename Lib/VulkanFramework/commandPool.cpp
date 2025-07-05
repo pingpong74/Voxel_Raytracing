@@ -1,9 +1,11 @@
 #include "../../includes/VulkanFramework/commandPool.hpp"
 #include <vulkan/vulkan_core.h>
 
+#include "../../config.h"
+
 using namespace vkf;
 
-CommandPool::CommandPool(LogicalDevice* logicalDevice, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) {
+CommandPool::CommandPool(LogicalDevice* logicalDevice, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags) {
     this->logicalDevice = logicalDevice;
     this->queueFamilyIndex = queueFamilyIndex;
 

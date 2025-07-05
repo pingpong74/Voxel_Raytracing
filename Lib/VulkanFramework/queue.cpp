@@ -1,6 +1,8 @@
 #include "../../includes/VulkanFramework/queue.hpp"
 #include <vulkan/vulkan_core.h>
 
+#include "../../config.h"
+
 using namespace vkf;
 
 Queue::Queue(LogicalDevice* logicalDevice, uint32_t familyIndex) {

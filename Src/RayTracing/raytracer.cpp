@@ -443,7 +443,6 @@ void RayTracer::updateDescriptorSets(float deltaTime) {
     VkWriteDescriptorSet writeInfo[] = {camWrite};
 
     vkUpdateDescriptorSets(logicalDevice->handle, 1, writeInfo, 0, VK_NULL_HANDLE);
-
 }
 
 void RayTracer::createRayTracingPipeline() {

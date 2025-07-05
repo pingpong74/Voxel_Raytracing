@@ -16,11 +16,5 @@ namespace vkf {
         void waitIdle();
 
         ~Queue() = default;
-
-        private:
-
-        uint32_t familyIndex = 0;
-        VkQueueFlags capabilities = 0;
-
     };
 }

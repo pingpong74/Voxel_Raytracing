@@ -4,9 +4,8 @@
 #include <vector>
 #include <glm/vec3.hpp>
 
-#include "../Device/logicalDevice.h"
-#include "../buffer.h"
-#include "../commandBuffer.h"
+#include "logicalDevice.hpp"
+#include "buffer.hpp"
 
 namespace vkf {
     static PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = nullptr;
@@ -22,15 +21,15 @@ namespace vkf {
         uint32_t blasOffset;
     };
 
-    struct BottomLevelAccelerationStructure {
+    class BottomLevelAccelerationStructure {
         VkAccelerationStructureKHR handle;
 
-        static std::vector<BottomLevelAccelerationStructure> createBottomLevelAccelerationStructure(CommandBuffer commandBuffer, LogicalDevice* logicalDevice, BottomLevelAccelerationStructureBuildInfo* blasBuldInfo, uint32_t count);
+        static std::vector<BottomLevelAccelerationStructure> createBottomLevelAccelerationStructure(VkCommandBuffer commandBuffer, LogicalDevice* logicalDevice, BottomLevelAccelerationStructureBuildInfo* blasBuldInfo, uint32_t count);
         VkDeviceAddress getAddress(LogicalDevice* logicalDevice);
         void destroy(LogicalDevice* logicalDevice);
     };
 
-    struct TopLevelAccelerationStructure {
+    class TopLevelAccelerationStructure {
         VkAccelerationStructureKHR handle;
         Buffer tlasBuffer;
         Buffer scratchBuffer;
@@ -41,7 +40,7 @@ namespace vkf {
         std::vector<BottomLevelAccelerationStructure> blases;
         std::vector<VkTransformMatrixKHR> transforms;
 
-        CommandBuffer commandBuffer;
+        VkCommandBuffer commandBuffer;
 
         static TopLevelAccelerationStructure createTopLevelAccelerationStructure(LogicalDevice* logicalDevice, VkCommandPool buildPool, std::vector<BottomLevelAccelerationStructure>, std::vector<VkTransformMatrixKHR> transforms);
         void updateTopLevelAccelerationStructure(LogicalDevice* logicalDevice, VkCommandPool buildPool, std::vector<BottomLevelAccelerationStructure> bottomLevelStructures, std::vector<VkTransformMatrixKHR> transforms);

@@ -1,4 +1,4 @@
-file := Src/main.cpp Src/application.cpp Src/window.cpp Src/Renderer/renderer.cpp Src/VulkanFramework/instance.cpp Src/VulkanFramework/logicalDevice.cpp Src/VulkanFramework/physicalDevice.cpp Src/VulkanFramework/swapchain.cpp
+file := Src/main.cpp Src/application.cpp Src/window.cpp Lib/Renderer/renderer.cpp Lib/VulkanFramework/instance.cpp Lib/VulkanFramework/logicalDevice.cpp Lib/VulkanFramework/physicalDevice.cpp Lib/VulkanFramework/swapchain.cpp Lib/VulkanFramework/buffer.cpp Lib/VulkanFramework/descriptor.cpp Lib/VulkanFramework/commandPool.cpp
 
 cFlags := -std=c++17 -O2
 ldFlags := -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi

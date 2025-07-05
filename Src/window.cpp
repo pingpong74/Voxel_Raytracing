@@ -1,4 +1,4 @@
-#include "../includes/window.hpp"
+#include "window.hpp"
 
 Window::Window() {
     glfwInit();
