@@ -104,17 +104,12 @@ void TopLevelAccelerationStructure::createTopLevelAccelerationStructure(std::vec
 
     VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo), "Failed to begin command buffer inside tlas")
 
-    Buffer::copyBuffer(instanceStagingBuffer, instanceBuffer, sizeof(VkAccelerationStructureInstanceKHR) * instances.size(), commandBuffer);
+    Buffer::copyBuffer(&instanceStagingBuffer, &instanceBuffer, sizeof(VkAccelerationStructureInstanceKHR) * instances.size(), commandBuffer);
     vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &buildGeometryInfo, (VkAccelerationStructureBuildRangeInfoKHR* const*)&infos);
 
     VK_CHECK(vkEndCommandBuffer(commandBuffer), "Failed to end command buffer inside tlas build");
 
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    VK_CHECK(vkQueueSubmit(logicalDevice->computeQueue, 1, &submitInfo, VK_NULL_HANDLE), "Failed to submit to queue");
+    logicalDevice->computeQueue.flushCommandBuffer(commandBuffer);
 }
 
 void TopLevelAccelerationStructure::updateTopLevelAccelerationStructure(std::vector<BottomLevelAccelerationStructure> bottomLevelStructures, std::vector<VkTransformMatrixKHR> transforms) {
@@ -190,6 +185,6 @@ void TopLevelAccelerationStructure::updateTopLevelAccelerationStructure(std::vec
     //FINALLY send the acceleration strucuture off the the gpu where it is built and will stay for the rest of its life before it is destoryed
     VkAccelerationStructureBuildRangeInfoKHR* infos[] = { &buildRangeInfo };
 
-    Buffer::copyBuffer(instanceBuffer, instanceStagingBuffer, sizeof(VkAccelerationStructureInstanceKHR) * instances.size(), commandBuffer);
+    Buffer::copyBuffer(&instanceBuffer, &instanceStagingBuffer, sizeof(VkAccelerationStructureInstanceKHR) * instances.size(), commandBuffer);
     vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &buildGeometryInfo, (VkAccelerationStructureBuildRangeInfoKHR* const*)&infos);
 }

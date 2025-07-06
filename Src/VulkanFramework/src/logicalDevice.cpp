@@ -1,4 +1,5 @@
 #include "../includes/logicalDevice.hpp"
+#include <GL/glext.h>
 #include <vulkan/vulkan_core.h>
 
 #include <stdexcept>
@@ -74,10 +75,24 @@ LogicalDevice::LogicalDevice(Instance* instance) {
 
 	VK_CHECK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &handle), "Failed to create logical device")
 
-	vkGetDeviceQueue(handle, indices.graphicsFamily.value(), 0, &graphicsQueue);
-	vkGetDeviceQueue(handle, indices.presentationFamily.value(), 0, &presentationQueue);
-	vkGetDeviceQueue(handle, indices.transferFamily.value(), 0, &transferQueue);
-	vkGetDeviceQueue(handle, indices.computeFamily.value(), 0, &computeQueue);
+	VkQueue _graphicsQueue, _transferQueue, _computeQueue, _presentationQueue;
+
+	vkGetDeviceQueue(handle, indices.graphicsFamily.value(), 0, &_graphicsQueue);
+	vkGetDeviceQueue(handle, indices.presentationFamily.value(), 0, &_presentationQueue);
+	vkGetDeviceQueue(handle, indices.transferFamily.value(), 0, &_transferQueue);
+	vkGetDeviceQueue(handle, indices.computeFamily.value(), 0, &_computeQueue);
+
+	graphicsQueue.handle = _graphicsQueue;
+	graphicsQueue.familyIndex = indices.graphicsFamily.value();
+
+	transferQueue.handle = _transferQueue;
+	transferQueue.familyIndex = indices.transferFamily.value();
+
+	computeQueue.handle = _computeQueue;
+	computeQueue.familyIndex = indices.computeFamily.value();
+
+	presentationQueue.handle = _presentationQueue;
+	presentationQueue.familyIndex = indices.presentationFamily.value();
 }
 
 void LogicalDevice::createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& bufferHandle, VkDeviceMemory& bufferMemory) {

@@ -18,6 +18,7 @@ VkCommandBuffer CommandPool::allocateCommandBuffer(VkCommandBufferLevel level = 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = handle;
+    allocInfo.commandBufferCount = 1;
     allocInfo.level = level;
     allocInfo.pNext = nullptr;
 

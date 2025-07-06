@@ -2,6 +2,7 @@
 
 #define VALIDATION_LAYERS_ENABLED true
 #include <vector>
+#include <stdexcept>
 
 const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation"};
 const std::vector<const char*> deviceExtensions = { "VK_KHR_swapchain",

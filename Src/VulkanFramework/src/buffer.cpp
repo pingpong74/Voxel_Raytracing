@@ -32,13 +32,13 @@ VkDeviceAddress Buffer::getBufferAddress() {
     return vkGetBufferDeviceAddress(logicalDevice->handle, &addressInfo);
 }
 
-void Buffer::copyBuffer(Buffer src, Buffer dst, int size, VkCommandBuffer commandBuffer, int srcOffset, int dstOffset) {
+void Buffer::copyBuffer(Buffer* src, Buffer* dst, int size, VkCommandBuffer commandBuffer, int srcOffset, int dstOffset) {
     VkBufferCopy copyRegion{};
     copyRegion.dstOffset = dstOffset;
     copyRegion.srcOffset = srcOffset;
     copyRegion.size = size;
 
-    vkCmdCopyBuffer(commandBuffer, src.handle, dst.handle, 1, &copyRegion);
+    vkCmdCopyBuffer(commandBuffer, src->handle, dst->handle, 1, &copyRegion);
 }
 
 Buffer::~Buffer() {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "logicalDevice.hpp"
 #include <vulkan/vulkan_core.h>
 
 namespace vkf {
@@ -8,6 +7,7 @@ namespace vkf {
         public:
 
         VkQueue handle;
+        uint32_t familyIndex;
 
         Queue() = default;
 

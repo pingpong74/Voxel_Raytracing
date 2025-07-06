@@ -4,6 +4,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "instance.hpp"
+#include "queue.hpp"
 
 namespace vkf {
 
@@ -13,7 +14,7 @@ namespace vkf {
         VkDevice handle;
         VkPhysicalDevice physicalDevice;
 
-        VkQueue graphicsQueue, transferQueue, computeQueue, presentationQueue;
+        Queue graphicsQueue, transferQueue, computeQueue, presentationQueue;
 
         LogicalDevice(Instance*);
         ~LogicalDevice();

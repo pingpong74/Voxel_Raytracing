@@ -105,11 +105,11 @@ void RayTracingPipeline::create(DescriptorSetLayout** layouts, uint32_t descript
     group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR;
     group.generalShader = VK_SHADER_UNUSED_KHR;
     group.closestHitShader = static_cast<uint32_t>(iClosestHit);
-
     if(intersectionMod != VK_NULL_HANDLE) group.intersectionShader = static_cast<uint32_t>(iIntersection);
     else group.intersectionShader = VK_SHADER_UNUSED_KHR;
-
     shaderGroups.push_back(group);
+
+    shaderGroupCount = shaderGroups.size();
 
     VkPipelineLayoutCreateInfo layoutCreateInfo{};
     layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -171,23 +171,23 @@ void RayTracingPipeline::createShaderBindingTable(CommandPool* transferPool) {
     const uint32_t handleSize = rayTracingPipelineProperties.shaderGroupHandleSize;
     const uint32_t handleAlignemt = rayTracingPipelineProperties.shaderGroupHandleAlignment;
     const uint32_t baseAligment = rayTracingPipelineProperties.shaderGroupBaseAlignment;
-    const uint32_t groupCount = shaderGroupCount;
 
     const uint32_t handleSizeAligned = (handleSize + handleAlignemt - 1) & ~(handleAlignemt - 1);
 
-    std::vector<uint8_t> shaderHandles(groupCount * handleSize);
-    VK_CHECK(vkGetRayTracingShaderGroupHandlesKHR(logicalDevice->handle, handle, 0, groupCount, shaderHandles.size(), shaderHandles.data()), "Failed to get shader handles");
+    std::vector<uint8_t> shaderHandles(shaderGroupCount * handleSize);
+    VK_CHECK(vkGetRayTracingShaderGroupHandlesKHR(logicalDevice->handle, handle, 0, shaderGroupCount, shaderHandles.size(), shaderHandles.data()), "Failed to get shader handles");
 
-    sbtBuffer.create(groupCount * baseAligment, VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    vkf::Buffer sbtStagingBuffer(groupCount * baseAligment, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, logicalDevice);
+    sbtBuffer.create(shaderGroupCount * baseAligment, VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    vkf::Buffer sbtStagingBuffer(shaderGroupCount * baseAligment, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, logicalDevice);
 
+    VkDeviceAddress sbtAddress = sbtBuffer.getBufferAddress();
     //Put the data in the buffer
     void* mappedData = nullptr;
-    vkMapMemory(logicalDevice->handle, sbtStagingBuffer.bufferMemory, 0, groupCount * handleAlignemt, 0, &mappedData);
+    vkMapMemory(logicalDevice->handle, sbtStagingBuffer.bufferMemory, 0, shaderGroupCount * handleAlignemt, 0, &mappedData);
 
     uint8_t* pData = reinterpret_cast<uint8_t*>(mappedData);
 
-    for (uint32_t i = 0; i < groupCount; i++) {
+    for (uint32_t i = 0; i < shaderGroupCount; i++) {
         std::memcpy(pData + i * baseAligment, shaderHandles.data() + i * handleSize, handleSize);
     }
 
@@ -201,19 +201,12 @@ void RayTracingPipeline::createShaderBindingTable(CommandPool* transferPool) {
 
     vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-    vkf::Buffer::copyBuffer(sbtStagingBuffer, sbtBuffer, groupCount * baseAligment, commandBuffer);
+    vkf::Buffer::copyBuffer(&sbtStagingBuffer, &sbtBuffer, shaderGroupCount * baseAligment, commandBuffer);
 
     vkEndCommandBuffer(commandBuffer);
 
-    VkSubmitInfo submitInfo{};
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    vkQueueSubmit(logicalDevice->transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(logicalDevice->transferQueue);
-
-    VkDeviceAddress sbtAddress = sbtBuffer.getBufferAddress();
+    logicalDevice->transferQueue.flushCommandBuffer(commandBuffer);
+    transferPool->freeCommandBuffer(commandBuffer);
 
     //Finally get the device addresses and shit idk wtf
     rgenRegion.deviceAddress = sbtAddress;
