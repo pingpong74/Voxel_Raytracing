@@ -1,0 +1,6 @@
+#folders to be ignored
+bin/
+
+#premake build files
+Makefile
+Voxy.make

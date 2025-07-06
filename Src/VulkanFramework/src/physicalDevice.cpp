@@ -1,11 +1,11 @@
-#include "../../includes/VulkanFramework/physicalDevice.hpp"
+#include "../includes/physicalDevice.hpp"
 
 #include <set>
 #include <string>
 #include <map>
 #include <stdexcept>
 
-#include "../../config.h"
+#include "../vulkanConfig.hpp"
 
 vkf::QueueFamily vkf::QueueFamily::findQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     vkf::QueueFamily queueFamily;

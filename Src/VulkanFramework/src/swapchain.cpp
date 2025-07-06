@@ -1,6 +1,6 @@
-#include "../../includes/VulkanFramework/swapchain.hpp"
-#include "../../includes/VulkanFramework/physicalDevice.hpp"
-#include "../../config.h"
+#include "../includes/swapchain.hpp"
+#include "../includes/physicalDevice.hpp"
+#include "../vulkanConfig.hpp"
 
 #include <vulkan/vulkan_core.h>
 #include <limits>

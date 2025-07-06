@@ -1,9 +1,11 @@
-#include "accelerationStructure.h"
+#include "../includes/accelerationStructure.hpp"
 #include <vulkan/vulkan_core.h>
+
+#include "../vulkanConfig.hpp"
 
 using namespace vkf;
 
-std::vector<BottomLevelAccelerationStructure> BottomLevelAccelerationStructure::createBottomLevelAccelerationStructure(CommandBuffer commandBuffer, LogicalDevice* logicalDevice, BottomLevelAccelerationStructureBuildInfo* blasBuldInfo, uint32_t count) {
+std::vector<BottomLevelAccelerationStructure> BottomLevelAccelerationStructure::createBottomLevelAccelerationStructure(VkCommandBuffer commandBuffer, LogicalDevice* logicalDevice, BottomLevelAccelerationStructureBuildInfo* blasBuldInfo, uint32_t count) {
 
     VkAccelerationStructureBuildGeometryInfoKHR geoInfos[count];
     VkAccelerationStructureBuildRangeInfoKHR* infos[count];
@@ -62,17 +64,18 @@ std::vector<BottomLevelAccelerationStructure> BottomLevelAccelerationStructure::
         accelerationCreateInfo.createFlags = 0;
         accelerationCreateInfo.deviceAddress = 0;
 
-        vkCreateAccelerationStructureKHR(logicalDevice->handle, &accelerationCreateInfo, nullptr, &accelerationStructures[i].handle);
+        VK_CHECK(vkCreateAccelerationStructureKHR(logicalDevice->handle, &accelerationCreateInfo, nullptr, &accelerationStructures[i].handle), "Failed to build blas")
 
         geoInfos[i].dstAccelerationStructure = accelerationStructures[i].handle;
+        accelerationStructures[i].logicalDevice = logicalDevice;
     }
 
-    vkCmdBuildAccelerationStructuresKHR(commandBuffer.handle, count, geoInfos, (VkAccelerationStructureBuildRangeInfoKHR* const*)&infos);
+    vkCmdBuildAccelerationStructuresKHR(commandBuffer, count, geoInfos, (VkAccelerationStructureBuildRangeInfoKHR* const*)&infos);
 
     return accelerationStructures;
 }
 
-VkDeviceAddress BottomLevelAccelerationStructure::getAddress(LogicalDevice* logicalDevice) {
+VkDeviceAddress BottomLevelAccelerationStructure::getAddress() {
     VkAccelerationStructureDeviceAddressInfoKHR addressInfo{};
     addressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
     addressInfo.accelerationStructure = handle;
@@ -80,6 +83,6 @@ VkDeviceAddress BottomLevelAccelerationStructure::getAddress(LogicalDevice* logi
     return vkGetAccelerationStructureDeviceAddressKHR(logicalDevice->handle, &addressInfo);
 }
 
-void BottomLevelAccelerationStructure::destroy(LogicalDevice* logicalDevice) {
+BottomLevelAccelerationStructure::~BottomLevelAccelerationStructure() {
     vkDestroyAccelerationStructureKHR(logicalDevice->handle, handle, nullptr);
 }

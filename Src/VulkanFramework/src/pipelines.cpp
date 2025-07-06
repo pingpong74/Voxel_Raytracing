@@ -1,5 +1,5 @@
-#include "../../includes/VulkanFramework/pipelines.hpp"
-#include "../../config.h"
+#include "../includes/pipelines.hpp"
+#include "../vulkanConfig.hpp"
 #include <fstream>
 #include <vector>
 #include <vulkan/vulkan_core.h>

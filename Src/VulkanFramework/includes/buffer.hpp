@@ -15,6 +15,7 @@ namespace vkf {
 
         void create(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
         VkDeviceAddress getBufferAddress();
+        inline uint32_t getSize() { return size; }
 
         static void copyBuffer(Buffer src, Buffer dst, int size, VkCommandBuffer commandBuffer, int srcOffset = 0, int dstOffset = 0);
 

@@ -1,7 +1,7 @@
-#include "../../includes/VulkanFramework/commandPool.hpp"
+#include "../includes/commandPool.hpp"
 #include <vulkan/vulkan_core.h>
 
-#include "../../config.h"
+#include "../vulkanConfig.hpp"
 
 using namespace vkf;
 

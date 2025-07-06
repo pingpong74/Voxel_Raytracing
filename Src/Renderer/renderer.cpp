@@ -1,8 +1,8 @@
-#include "../../includes/Renderer/renderer.hpp"
+#include "renderer.hpp"
 
-#include "../../includes/VulkanFramework/buffer.hpp"
-#include "../../includes/VulkanFramework/commandPool.hpp"
-#include "../../includes/VulkanFramework/descriptor.hpp"
+#include "../VulkanFramework/includes/buffer.hpp"
+#include "../VulkanFramework/includes/commandPool.hpp"
+#include "../VulkanFramework/includes/descriptor.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan_core.h>
 

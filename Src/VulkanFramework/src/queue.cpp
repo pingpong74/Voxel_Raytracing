@@ -1,7 +1,7 @@
-#include "../../includes/VulkanFramework/queue.hpp"
+#include "../includes/queue.hpp"
 #include <vulkan/vulkan_core.h>
 
-#include "../../config.h"
+#include "../vulkanConfig.hpp"
 
 using namespace vkf;
 

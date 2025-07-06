@@ -1,11 +1,11 @@
-#include "../../includes/VulkanFramework/instance.hpp"
+#include "../includes/instance.hpp"
 
 #include <stdexcept>
 #include <vector>
 #include <string.h>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan_core.h>
-#include "../../config.h"
+#include "../vulkanConfig.hpp"
 
 using namespace vkf;
 

@@ -1,4 +1,4 @@
-#include "../../includes/VulkanFramework/image.hpp"
+#include "../includes/image.hpp"
 #include <vulkan/vulkan_core.h>
 
 using namespace vkf;
@@ -94,5 +94,5 @@ void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLay
 }
 
 Image::~Image() {
-    logicalDevice->destroyImage(handle, imageMemory);
+    logicalDevice->destroyImage(handle, imageMemory, view);
 }

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../VulkanFramework/instance.hpp"
-#include "../VulkanFramework/logicalDevice.hpp"
-#include "../VulkanFramework/swapchain.hpp"
-#include "../VulkanFramework/pipelines.hpp"
+#include "../VulkanFramework/includes/instance.hpp"
+#include "../VulkanFramework/includes/logicalDevice.hpp"
+#include "../VulkanFramework/includes/swapchain.hpp"
+#include "../VulkanFramework/includes/pipelines.hpp"
 #include <GLFW/glfw3.h>
 
 class Renderer {

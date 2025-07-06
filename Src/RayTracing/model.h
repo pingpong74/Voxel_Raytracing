@@ -6,8 +6,6 @@
 #include <string>
 #include <vector>
 
-#include "../VulkanFramework/vulkanFramework.h"
-
 
 
 struct VoxelModel {
@@ -15,9 +13,4 @@ struct VoxelModel {
     std::vector<uint8_t> voxels;
 
     static VoxelModel loadModel(const std::string& filepath);
-};
-
-struct VoxelVolume {
-    vkf::BottomLevelAccelerationStructure accelerationStructure;
-    InstanceData instanceData;
 };

@@ -1,8 +1,8 @@
-#include "../../includes/VulkanFramework/descriptor.hpp"
+#include "../includes/descriptor.hpp"
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
-#include "../../config.h"
+#include "../vulkanConfig.hpp"
 
 using namespace vkf;
 

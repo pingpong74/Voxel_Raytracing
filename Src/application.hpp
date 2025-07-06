@@ -3,7 +3,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 
-#include "../includes/Renderer/renderer.hpp"
+#include "Renderer/renderer.hpp"
 #include "window.hpp"
 
 #define FRAME_IN_FLIGHT 2

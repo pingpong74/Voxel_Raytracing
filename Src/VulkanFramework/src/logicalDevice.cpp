@@ -1,13 +1,13 @@
-#include "../../includes/VulkanFramework/logicalDevice.hpp"
+#include "../includes/logicalDevice.hpp"
 #include <vulkan/vulkan_core.h>
 
 #include <stdexcept>
 #include <vector>
 #include <set>
 
-#include "../../includes/VulkanFramework/physicalDevice.hpp"
+#include "../includes/physicalDevice.hpp"
 
-#include "../../config.h"
+#include "../vulkanConfig.hpp"
 
 using namespace vkf;
 
