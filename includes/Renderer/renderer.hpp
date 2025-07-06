@@ -3,7 +3,7 @@
 #include "../VulkanFramework/instance.hpp"
 #include "../VulkanFramework/logicalDevice.hpp"
 #include "../VulkanFramework/swapchain.hpp"
-#include "../VulkanFramework/queue.hpp"
+#include "../VulkanFramework/pipelines.hpp"
 #include <GLFW/glfw3.h>
 
 class Renderer {
@@ -20,5 +20,5 @@ class Renderer {
     vkf::Instance instance;
     vkf::LogicalDevice logicalDevice;
     vkf::Swapchain swapchain;
-
+    vkf::RayTracingPipeline rayTracingPipeline;
 };

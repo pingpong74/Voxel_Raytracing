@@ -1,14 +1,27 @@
 #include "../../includes/VulkanFramework/buffer.hpp"
+#include <vulkan/vulkan_core.h>
 
 using namespace vkf;
 
+Buffer::Buffer(LogicalDevice* logicalDevice) {
+    this->logicalDevice = logicalDevice;
+}
+
 Buffer::Buffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, LogicalDevice* logicalDevice) {
+    this->size = size;
+    this->usage = usage;
+    this->properties = properties;
+    this->logicalDevice = logicalDevice;
+
+    logicalDevice->createBuffer(size, usage, properties, handle, bufferMemory);
+}
+
+void Buffer::create(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
     logicalDevice->createBuffer(size, usage, properties, handle, bufferMemory);
 
     this->size = size;
     this->usage = usage;
     this->properties = properties;
-    this->logicalDevice = logicalDevice;
 }
 
 VkDeviceAddress Buffer::getBufferAddress() {
@@ -29,5 +42,5 @@ void Buffer::copyBuffer(Buffer src, Buffer dst, int size, VkCommandBuffer comman
 }
 
 Buffer::~Buffer() {
-    logicalDevice->destroyBuffer(handle, bufferMemory);
+    if(handle != VK_NULL_HANDLE) logicalDevice->destroyBuffer(handle, bufferMemory);
 }

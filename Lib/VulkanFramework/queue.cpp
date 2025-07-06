@@ -5,8 +5,14 @@
 
 using namespace vkf;
 
-Queue::Queue(LogicalDevice* logicalDevice, uint32_t familyIndex) {
-    vkGetDeviceQueue(logicalDevice->handle, familyIndex, 0, &handle);
+void Queue::flushCommandBuffer(VkCommandBuffer commandBuffer) {
+    VkSubmitInfo submitInfo{};
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    vkQueueSubmit(handle, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(handle);
 }
 
 void Queue::submit(const VkSubmitInfo* submits, uint32_t submitCount, VkFence fence = VK_NULL_HANDLE) {

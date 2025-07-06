@@ -7,11 +7,13 @@
 namespace vkf {
     class Buffer {
         public:
-        VkBuffer handle;
-        VkDeviceMemory bufferMemory;
+        VkBuffer handle = VK_NULL_HANDLE;
+        VkDeviceMemory bufferMemory = VK_NULL_HANDLE;
 
+        Buffer(LogicalDevice*);
         Buffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, LogicalDevice* logicalDevice);
 
+        void create(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
         VkDeviceAddress getBufferAddress();
 
         static void copyBuffer(Buffer src, Buffer dst, int size, VkCommandBuffer commandBuffer, int srcOffset = 0, int dstOffset = 0);

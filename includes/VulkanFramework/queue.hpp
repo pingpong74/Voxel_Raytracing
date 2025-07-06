@@ -9,8 +9,9 @@ namespace vkf {
 
         VkQueue handle;
 
-        Queue(LogicalDevice* , uint32_t);
+        Queue() = default;
 
+        void flushCommandBuffer(VkCommandBuffer);
         void submit(const VkSubmitInfo*, uint32_t, VkFence);
         void present(VkPresentInfoKHR*);
         void waitIdle();

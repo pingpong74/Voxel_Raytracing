@@ -5,7 +5,6 @@
 
 #include "instance.hpp"
 
-
 namespace vkf {
 
     class LogicalDevice {

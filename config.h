@@ -14,6 +14,10 @@ const std::vector<const char*> deviceExtensions = { "VK_KHR_swapchain",
     "VK_KHR_8bit_storage"
 };
 
+#define LOAD_FUNC(device, name) \
+name = (PFN_##name)vkGetDeviceProcAddr(device->handle, #name); \
+if(!name) { throw std::runtime_error("Failed to load function"); }
+
 #if VALIDATION_LAYERS_ENABLED
 
     #define VK_CHECK(name, err) \
