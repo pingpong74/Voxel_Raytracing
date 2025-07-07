@@ -9,16 +9,10 @@
 #include "buffer.hpp"
 
 namespace vkf {
-    static PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = nullptr;
-    static PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = nullptr;
-    static PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = nullptr;
-    static PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = nullptr;
-    static PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR = nullptr;
-
     struct BottomLevelAccelerationStructureBuildInfo {
         VkDeviceAddress boundingBoxBufferAddress;
         VkDeviceAddress scratchBufferAddress;
-        Buffer blasBuffer;
+        Buffer* blasBuffer;
         uint32_t blasOffset;
     };
 
@@ -48,7 +42,7 @@ namespace vkf {
         TopLevelAccelerationStructure(LogicalDevice* logicalDevice, CommandPool* buildPool);
         ~TopLevelAccelerationStructure();
 
-        void createTopLevelAccelerationStructure(std::vector<BottomLevelAccelerationStructure>, std::vector<VkTransformMatrixKHR> transforms);
+        void createTopLevelAccelerationStructure(std::vector<BottomLevelAccelerationStructure>*, std::vector<VkTransformMatrixKHR>* transforms);
         //Doesnt not start recording or submit the command buffer, meed to do it yourself
         void updateTopLevelAccelerationStructure(std::vector<BottomLevelAccelerationStructure> bottomLevelStructures, std::vector<VkTransformMatrixKHR> transforms);
 

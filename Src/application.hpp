@@ -14,8 +14,12 @@ class Application {
     public:
 
     Application();
-    void run();
     ~Application() = default;
+
+    void run();
+
+    void frameBufferResize();
+    void mouseCallBack();
 
     private:
 

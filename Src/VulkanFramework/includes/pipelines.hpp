@@ -34,9 +34,6 @@ namespace vkf {
         VkStridedDeviceAddressRegionKHR hitRegion{};
         VkStridedDeviceAddressRegionKHR callRegion{};
 
-        PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
-        PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
-
         VkPipeline handle;
         VkPipelineLayout pipelineLayout;
         LogicalDevice* logicalDevice;

@@ -5,13 +5,15 @@
 const int initialWidth = 800;
 const int initialHeight = 600;
 
+class Application;
+
 class Window {
     public:
 
     GLFWwindow* handle;
     int width, height;
 
-    Window();
+    Window(Application*);
     ~Window();
 
     private:

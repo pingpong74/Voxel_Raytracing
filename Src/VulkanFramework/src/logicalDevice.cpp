@@ -1,5 +1,6 @@
 #include "../includes/logicalDevice.hpp"
 #include <GL/glext.h>
+#include <sys/types.h>
 #include <vulkan/vulkan_core.h>
 
 #include <stdexcept>
@@ -9,6 +10,7 @@
 #include "../includes/physicalDevice.hpp"
 
 #include "../vulkanConfig.hpp"
+#include "../includes/loadedFunctions.hpp"
 
 using namespace vkf;
 
@@ -93,6 +95,17 @@ LogicalDevice::LogicalDevice(Instance* instance) {
 
 	presentationQueue.handle = _presentationQueue;
 	presentationQueue.familyIndex = indices.presentationFamily.value();
+
+	//Acceleration Structures
+	LOAD_FUNC(handle, vkGetAccelerationStructureDeviceAddressKHR)
+    LOAD_FUNC(handle, vkGetAccelerationStructureBuildSizesKHR)
+    LOAD_FUNC(handle, vkCreateAccelerationStructureKHR)
+    LOAD_FUNC(handle, vkCmdBuildAccelerationStructuresKHR)
+    LOAD_FUNC(handle, vkDestroyAccelerationStructureKHR)
+
+    //Raytracing pipeline
+    LOAD_FUNC(handle, vkCreateRayTracingPipelinesKHR)
+    LOAD_FUNC(handle, vkGetRayTracingShaderGroupHandlesKHR)
 }
 
 void LogicalDevice::createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& bufferHandle, VkDeviceMemory& bufferMemory) {

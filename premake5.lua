@@ -13,7 +13,7 @@ project "Voxy"
 
     includedirs {
         "/usr/include",            -- system headers
-        "/usr/include/glm",        -- glm (redundant since /usr/include should catch it)
+        "/usr/include/glm",        -- glm
         "/usr/include/GLFW",       -- GLFW headers
         "/usr/include/vulkan"      -- Vulkan headers
     }

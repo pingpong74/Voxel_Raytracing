@@ -5,6 +5,8 @@
 #include <vulkan/vulkan_core.h>
 #include <cstring>
 
+#include "../includes/loadedFunctions.hpp"
+
 using namespace vkf;
 
 VkShaderModule vkf::createShaderModule(const std::string& filePath, LogicalDevice* logicalDevice) {
@@ -42,17 +44,18 @@ VkPipelineShaderStageCreateInfo vkf::createShaderStageCreateInfo(VkShaderModule 
 	return createInfo;
 }
 
-RayTracingPipeline::RayTracingPipeline(LogicalDevice* logicalDevice) : sbtBuffer(logicalDevice) {
+RayTracingPipeline::RayTracingPipeline(LogicalDevice* logicalDevice) : sbtBuffer(logicalDevice), rayTracingPipelineProperties() {
     this->logicalDevice = logicalDevice;
 
-    LOAD_FUNC(logicalDevice, vkCreateRayTracingPipelinesKHR)
-    LOAD_FUNC(logicalDevice, vkGetRayTracingShaderGroupHandlesKHR)
+
+    std::cout << " oinke" << std::endl;
 
     rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
 	VkPhysicalDeviceProperties2 deviceProperties2{};
 	deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	deviceProperties2.pNext = &rayTracingPipelineProperties;
 	vkGetPhysicalDeviceProperties2(logicalDevice->physicalDevice, &deviceProperties2);
+	std::cout << " oinke" << std::endl;
 }
 
 void RayTracingPipeline::create(DescriptorSetLayout** layouts, uint32_t descriptorSetCount, uint32_t pushConstantsSize, std::string raygen, std::string miss, std::string closestHit, std::string intersection) {
@@ -159,7 +162,7 @@ void RayTracingPipeline::create(DescriptorSetLayout** layouts, uint32_t descript
     pipelineCreateInfo.maxPipelineRayRecursionDepth = 2;
     pipelineCreateInfo.layout = pipelineLayout;
 
-    VK_CHECK(vkCreateRayTracingPipelinesKHR(logicalDevice->handle, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &handle), "Failed to create ray tracing pipeline");
+    VK_CHECK(vkf::vkCreateRayTracingPipelinesKHR(logicalDevice->handle, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &handle), "Failed to create ray tracing pipeline");
 
     vkDestroyShaderModule(logicalDevice->handle, raygenMod, nullptr);
     vkDestroyShaderModule(logicalDevice->handle, missMod, nullptr);

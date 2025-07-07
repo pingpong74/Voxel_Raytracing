@@ -20,7 +20,7 @@ Instance::Instance(GLFWwindow* window) {
 	app_info.pApplicationName = "Vulkan Renderer";
 	app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	app_info.pEngineName = "No Engine";
-	app_info.apiVersion = VK_API_VERSION_1_2;
+	app_info.apiVersion = VK_API_VERSION_1_4;
 
 	//get the extensions
 	uint32_t glfwExtensionCount = 0;

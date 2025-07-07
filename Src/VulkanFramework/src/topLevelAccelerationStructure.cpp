@@ -3,6 +3,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "../vulkanConfig.hpp"
+#include "../includes/loadedFunctions.hpp"
 
 using namespace vkf;
 
@@ -13,23 +14,25 @@ TopLevelAccelerationStructure::TopLevelAccelerationStructure(LogicalDevice* logi
 }
 
 TopLevelAccelerationStructure::~TopLevelAccelerationStructure() {
+    std::cout << "ogga" << std::endl;
     vkDestroyAccelerationStructureKHR(logicalDevice->handle, handle, nullptr);
     buildPool->freeCommandBuffer(commandBuffer);
+    std::cout << "bogga" << std::endl;
 }
 
-void TopLevelAccelerationStructure::createTopLevelAccelerationStructure(std::vector<BottomLevelAccelerationStructure> bottomLevelStructures, std::vector<VkTransformMatrixKHR> transforms) {
+void TopLevelAccelerationStructure::createTopLevelAccelerationStructure(std::vector<BottomLevelAccelerationStructure>* bottomLevelStructures, std::vector<VkTransformMatrixKHR>* transforms) {
     std::vector<VkAccelerationStructureInstanceKHR> instances;
 
-    if(bottomLevelStructures.size() == 0) throw std::runtime_error("No bottom level structures");
+    if(bottomLevelStructures->size() == 0) throw std::runtime_error("No bottom level structures");
 
-    for(int i = 0; i < bottomLevelStructures.size(); i++) {
+    for(int i = 0; i < bottomLevelStructures->size(); i++) {
         VkAccelerationStructureInstanceKHR instance{};
-		instance.transform = transforms[i];
+		instance.transform = (*transforms)[i];
 		instance.instanceCustomIndex = i;
 		instance.mask = 0xFF;
 		instance.instanceShaderBindingTableRecordOffset = 0;
 		instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-		instance.accelerationStructureReference = bottomLevelStructures[i].getAddress();
+		instance.accelerationStructureReference = (*bottomLevelStructures)[i].getAddress();
         instances.push_back(instance);
     }
 
@@ -48,7 +51,7 @@ void TopLevelAccelerationStructure::createTopLevelAccelerationStructure(std::vec
     geometry.geometry.instances = instanceData;
 
     VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{};
-    buildRangeInfo.primitiveCount = bottomLevelStructures.size();
+    buildRangeInfo.primitiveCount = (*bottomLevelStructures).size();
     buildRangeInfo.firstVertex = 0;
     buildRangeInfo.primitiveOffset = 0;
     buildRangeInfo.transformOffset = 0;
@@ -67,22 +70,22 @@ void TopLevelAccelerationStructure::createTopLevelAccelerationStructure(std::vec
     //Get info about the size of the acceleration structure and also the scratch buffer required
     VkAccelerationStructureBuildSizesInfoKHR sizeInfo{};
     sizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-    uint32_t count = bottomLevelStructures.size();
+    uint32_t count = (*bottomLevelStructures).size();
     vkGetAccelerationStructureBuildSizesKHR(logicalDevice->handle, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildGeometryInfo, &count, &sizeInfo);
 
     //Make a scratch buffer from the info gathered
-    Buffer scratchBuffer(sizeInfo.buildScratchSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, logicalDevice);
+    scratchBuffer.create(sizeInfo.buildScratchSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     //assign the scratch buffer
     buildGeometryInfo.scratchData.deviceAddress = scratchBuffer.getBufferAddress();
 
     //make the buffer in which the acceleration strcuture will reside
-    Buffer accelerationStructureBuffer(sizeInfo.accelerationStructureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, logicalDevice);
+    tlasBuffer.create(sizeInfo.accelerationStructureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     //create acceleeration structure
-    VkAccelerationStructureCreateInfoKHR accelerationCreateInfo;
+    VkAccelerationStructureCreateInfoKHR accelerationCreateInfo{};
     accelerationCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-    accelerationCreateInfo.buffer = accelerationStructureBuffer.handle;
+    accelerationCreateInfo.buffer = tlasBuffer.handle;
     accelerationCreateInfo.size = sizeInfo.accelerationStructureSize;
     accelerationCreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
     accelerationCreateInfo.pNext = VK_NULL_HANDLE;
@@ -90,10 +93,9 @@ void TopLevelAccelerationStructure::createTopLevelAccelerationStructure(std::vec
     accelerationCreateInfo.createFlags = 0;
     accelerationCreateInfo.deviceAddress = 0;
 
-    VkAccelerationStructureKHR accelerationStructure;
-    VK_CHECK(vkCreateAccelerationStructureKHR(logicalDevice->handle, &accelerationCreateInfo, nullptr, &accelerationStructure), "Failed to create accleleration structure");
+    VK_CHECK(vkCreateAccelerationStructureKHR(logicalDevice->handle, &accelerationCreateInfo, nullptr, &handle), "Failed to create accleleration structure");
 
-    buildGeometryInfo.dstAccelerationStructure = accelerationStructure;
+    buildGeometryInfo.dstAccelerationStructure = handle;
 
     //FINALLY send the acceleration strucuture off the the gpu where it is built and will stay for the rest of its life before it is destoryed
     VkAccelerationStructureBuildRangeInfoKHR* infos[] = { &buildRangeInfo };
@@ -105,11 +107,13 @@ void TopLevelAccelerationStructure::createTopLevelAccelerationStructure(std::vec
     VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo), "Failed to begin command buffer inside tlas")
 
     Buffer::copyBuffer(&instanceStagingBuffer, &instanceBuffer, sizeof(VkAccelerationStructureInstanceKHR) * instances.size(), commandBuffer);
-    vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &buildGeometryInfo, (VkAccelerationStructureBuildRangeInfoKHR* const*)&infos);
+    vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &buildGeometryInfo, infos);
 
     VK_CHECK(vkEndCommandBuffer(commandBuffer), "Failed to end command buffer inside tlas build");
 
     logicalDevice->computeQueue.flushCommandBuffer(commandBuffer);
+
+    std::cout << handle << std::endl;
 }
 
 void TopLevelAccelerationStructure::updateTopLevelAccelerationStructure(std::vector<BottomLevelAccelerationStructure> bottomLevelStructures, std::vector<VkTransformMatrixKHR> transforms) {

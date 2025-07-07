@@ -2,16 +2,18 @@
 #include <vulkan/vulkan_core.h>
 
 #include "../vulkanConfig.hpp"
+#include "../includes/loadedFunctions.hpp"
 
 using namespace vkf;
 
 std::vector<BottomLevelAccelerationStructure> BottomLevelAccelerationStructure::createBottomLevelAccelerationStructure(VkCommandBuffer commandBuffer, LogicalDevice* logicalDevice, BottomLevelAccelerationStructureBuildInfo* blasBuldInfo, uint32_t count) {
 
     VkAccelerationStructureBuildGeometryInfoKHR geoInfos[count];
-    VkAccelerationStructureBuildRangeInfoKHR* infos[count];
+    VkAccelerationStructureBuildRangeInfoKHR buildRangeInfos[count];
     std::vector<BottomLevelAccelerationStructure> accelerationStructures(count);
 
     for(int i = 0; i < count; i++) {
+        std::cout << i << std::endl;
         VkAccelerationStructureGeometryAabbsDataKHR aabbData{};
         aabbData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
         aabbData.data.deviceAddress = blasBuldInfo[i].boundingBoxBufferAddress;
@@ -27,11 +29,10 @@ std::vector<BottomLevelAccelerationStructure> BottomLevelAccelerationStructure::
         geometry.pNext = nullptr;
 
         //Gives info on how the data is laid out
-        VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{};
-        buildRangeInfo.primitiveCount = 1;
-        buildRangeInfo.primitiveOffset = 0;
-        buildRangeInfo.transformOffset = 0;
-        buildRangeInfo.firstVertex = 0;
+        buildRangeInfos[i].primitiveCount = 1;
+        buildRangeInfos[i].primitiveOffset = 0;
+        buildRangeInfos[i].transformOffset = 0;
+        buildRangeInfos[i].firstVertex = 0;
 
         //Information on how this data needs to be built
         geoInfos[i].sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
@@ -56,7 +57,7 @@ std::vector<BottomLevelAccelerationStructure> BottomLevelAccelerationStructure::
         //create the acceleration struture
         VkAccelerationStructureCreateInfoKHR accelerationCreateInfo;
         accelerationCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-        accelerationCreateInfo.buffer = blasBuldInfo[i].blasBuffer.handle;
+        accelerationCreateInfo.buffer = blasBuldInfo[i].blasBuffer->handle;
         accelerationCreateInfo.size = sizeInfo.accelerationStructureSize;
         accelerationCreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
         accelerationCreateInfo.pNext = VK_NULL_HANDLE;
@@ -68,6 +69,14 @@ std::vector<BottomLevelAccelerationStructure> BottomLevelAccelerationStructure::
 
         geoInfos[i].dstAccelerationStructure = accelerationStructures[i].handle;
         accelerationStructures[i].logicalDevice = logicalDevice;
+    }
+
+    std::cout << count << std::endl;
+
+    VkAccelerationStructureBuildRangeInfoKHR* infos[count];
+
+    for(int i = 0; i < count; i++) {
+        infos[i] = &buildRangeInfos[i];
     }
 
     vkCmdBuildAccelerationStructuresKHR(commandBuffer, count, geoInfos, (VkAccelerationStructureBuildRangeInfoKHR* const*)&infos);

@@ -20,5 +20,6 @@ class Renderer {
     vkf::Instance instance;
     vkf::LogicalDevice logicalDevice;
     vkf::Swapchain swapchain;
+    vkf::CommandPool graphicsPool, transferPool, computePool;
     vkf::RayTracingPipeline rayTracingPipeline;
 };
