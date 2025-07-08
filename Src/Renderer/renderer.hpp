@@ -4,6 +4,7 @@
 #include "../VulkanFramework/includes/logicalDevice.hpp"
 #include "../VulkanFramework/includes/swapchain.hpp"
 #include "../VulkanFramework/includes/pipelines.hpp"
+#include "raytracer.hpp"
 #include <GLFW/glfw3.h>
 
 class Renderer {
@@ -21,5 +22,5 @@ class Renderer {
     vkf::LogicalDevice logicalDevice;
     vkf::Swapchain swapchain;
     vkf::CommandPool graphicsPool, transferPool, computePool;
-    vkf::RayTracingPipeline rayTracingPipeline;
+    Raytracer raytracer;
 };

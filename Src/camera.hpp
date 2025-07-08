@@ -6,6 +6,11 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <math.h>
 
+struct CameraConstants {
+    glm::mat4 inverseView;
+    glm::mat4 inverseProjection;
+};
+
 class Camera {
     private:
 

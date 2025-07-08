@@ -1,6 +1,12 @@
 #pragma once
 
-#define VALIDATION_LAYERS_ENABLED true
+#ifdef DEBUG
+    #define VALIDATION_LAYERS_ENABLED true
+#else
+    #define VALIDATION_LAYERS_ENABLED false
+#endif
+
+
 #include <vector>
 #include <stdexcept>
 

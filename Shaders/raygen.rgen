@@ -5,12 +5,12 @@ layout(location = 0) rayPayloadEXT vec3 hitValue;
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 1, set = 0, rgba16f) uniform image2D image;
-layout(binding = 2, set = 0) uniform UniformBufferObject {
+layout(push_constants) uniform UniformBufferObject {
     mat4 inverseView;
     mat4 inverseProj;
 } camMatrices;
 
-void main() 
+void main()
 {
     const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
 	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeEXT.xy);

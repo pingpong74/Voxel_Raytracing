@@ -118,11 +118,11 @@ void RayTracingPipeline::create(DescriptorSetLayout** layouts, uint32_t descript
     layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
     //Push constants
-
     if(pushConstantsSize > 0) {
         VkPushConstantRange pushConstantsRange{};
         pushConstantsRange.offset = 0;
         pushConstantsRange.size = pushConstantsSize;
+        pushConstantsRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
         layoutCreateInfo.pushConstantRangeCount = 1;
         layoutCreateInfo.pPushConstantRanges = &pushConstantsRange;
     }

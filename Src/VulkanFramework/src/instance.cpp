@@ -42,7 +42,7 @@ Instance::Instance(GLFWwindow* window) {
 		instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		instanceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 	#else
-	    create_info.enabledLayerCount = 0;
+	    instanceCreateInfo.enabledLayerCount = 0;
 	#endif
 
 	VK_CHECK(vkCreateInstance(&instanceCreateInfo, nullptr, &handle), "Failed to create instance")
