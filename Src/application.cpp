@@ -19,9 +19,9 @@ scene(&logicalDevice, &computePool, window.handle) {
 }
 
 void Application::frameBufferResize(int width, int height) {
-    std::cout << "resizing" << std::endl;
     swapchain.recreateSwapchain(width, height);
     renderer.frameBufferResize(width, height);
+    scene.frameBufferResize(width, height);
 }
 
 void Application::mouseCallBack(double xpos, double ypos) {

@@ -86,7 +86,7 @@ void Renderer::drawFrame() {
 
 	logicalDevice->presentationQueue.present(&presentInfo);
 
-	logicalDevice->presentationQueue.waitIdle();
+	//logicalDevice->presentationQueue.waitIdle();
 }
 
 void Renderer::frameBufferResize(int width, int height) {

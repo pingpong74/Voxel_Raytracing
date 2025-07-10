@@ -77,13 +77,15 @@ void Raytracer::setScene(Scene* scene) {
 }
 
 void Raytracer::frameBufferResize(int width, int height) {
-    VkFormat format = frameImage.getFormat();
+    VkFormat format = frameImage.format;
     VkExtent2D extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
     logicalDevice->destroyImage(frameImage.handle, frameImage.imageMemory, frameImage.view);
 
     logicalDevice->createImage(format, extent, frameImage.handle, frameImage.imageMemory);
     logicalDevice->createImageView(frameImage.handle, format, frameImage.view);
+
+    frameImage.extent = extent;
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -124,7 +126,7 @@ void Raytracer::traceRays(CameraConstants camConstants, VkCommandBuffer commandB
     //Now we shall begin copying the generated img to the swapchain.
     VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 
-    raytracingPipeline.traceRays(commandBuffer, frameImage.getExtent());
+    raytracingPipeline.traceRays(commandBuffer, frameImage.extent);
 
     //Change the layouts of the images to help copying
     swapchainImage->transitionLayout(commandBuffer,VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
@@ -137,7 +139,7 @@ void Raytracer::traceRays(CameraConstants camConstants, VkCommandBuffer commandB
 	copyRegion.srcOffset = { 0, 0, 0 };
 	copyRegion.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
 	copyRegion.dstOffset = { 0, 0, 0 };
-	VkExtent2D extent2d = frameImage.getExtent();
+	VkExtent2D extent2d = frameImage.extent;
 	copyRegion.extent = {extent2d.width, extent2d.height, 1};
 
     vkCmdCopyImage(commandBuffer, frameImage.handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapchainImage->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);

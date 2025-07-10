@@ -3,6 +3,8 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/matrix.hpp>
 
+#include <iostream>
+
 Camera::Camera(GLFWwindow* window) {
     lastX = (double)1920 * 0.5;
 	lastY = (double)1080 * 0.5;
@@ -58,6 +60,7 @@ void Camera::mouseCallback(double xpos, double ypos) {
 
 void Camera::frameBufferResize(int width, int height) {
     camCons.inverseProjection = glm::inverse(glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f));
+    std::cout << "HIWVVVVVVVVEJKKNNNNN " << std::endl;
 }
 
 void Camera::takeInput(float deltaTime) {
