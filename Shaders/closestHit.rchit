@@ -5,8 +5,6 @@
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
 
-hitAttributeEXT uint8_t colour;
-
 layout(location = 0) rayPayloadInEXT vec3 hitValue;
 
 vec3 colours[] = { vec3(0), vec3( 0.6, 0.3, 0.3), vec3(0.8, 0.25, 0.25), vec3(0.3, 0.7, 0.3), vec3(0.1, 0.9, 0.1), vec3(0.3, 0.3, 0.7), vec3(0.1, 0.1, 0.9) };
@@ -272,5 +270,5 @@ const vec3 palette[256] = vec3[](
 
 void main()
 {
-    hitValue = palette[colour];
+    hitValue = vec3(0.8, 0.2, 0.2);
 }

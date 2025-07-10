@@ -88,8 +88,6 @@ DescriptorSet DescriptorPool::allocateDescriptorSet(DescriptorSetLayout* layout)
 
 DescriptorPool::~DescriptorPool() {
     vkDestroyDescriptorPool(logicalDevice->handle, handle, nullptr);
-
-    std::cout << "3" << std::endl;
 }
 
 void DescriptorSet::write(VkWriteDescriptorSet* writeInfo, uint32_t count) {

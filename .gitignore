@@ -1,5 +1,6 @@
 #folders to be ignored
 bin/
+Shaders/spv/
 
 #premake build files
 Makefile

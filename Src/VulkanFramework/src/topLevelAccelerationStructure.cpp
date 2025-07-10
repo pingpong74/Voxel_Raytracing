@@ -1,4 +1,5 @@
 #include "../includes/accelerationStructure.hpp"
+#include <cstring>
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
@@ -14,10 +15,8 @@ TopLevelAccelerationStructure::TopLevelAccelerationStructure(LogicalDevice* logi
 }
 
 TopLevelAccelerationStructure::~TopLevelAccelerationStructure() {
-    std::cout << "ogga" << std::endl;
-    vkDestroyAccelerationStructureKHR(logicalDevice->handle, handle, nullptr);
+    if(handle != VK_NULL_HANDLE) vkDestroyAccelerationStructureKHR(logicalDevice->handle, handle, nullptr);
     buildPool->freeCommandBuffer(commandBuffer);
-    std::cout << "bogga" << std::endl;
 }
 
 void TopLevelAccelerationStructure::createTopLevelAccelerationStructure(std::vector<BottomLevelAccelerationStructure>* bottomLevelStructures, std::vector<VkTransformMatrixKHR>* transforms) {
@@ -39,6 +38,10 @@ void TopLevelAccelerationStructure::createTopLevelAccelerationStructure(std::vec
     //create a buffer on the gpu which has the data in the exact format wanted by vulkan
     instanceBuffer.create(sizeof(VkAccelerationStructureInstanceKHR) * instances.size(), VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     instanceStagingBuffer.create(sizeof(VkAccelerationStructureInstanceKHR) * instances.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+    void* data = instanceStagingBuffer.map();
+    memcpy(data, instances.data(), instances.size() * sizeof(VkAccelerationStructureInstanceKHR));
+    instanceStagingBuffer.unmap();
 
     //Fill the data related to the instances
     VkAccelerationStructureGeometryInstancesDataKHR instanceData{};
@@ -141,6 +144,10 @@ void TopLevelAccelerationStructure::updateTopLevelAccelerationStructure(std::vec
         //Add resize code here...  for now just throw a runtime error XD
         throw std::runtime_error("Toooo many bottom level acceleration structures");
     }
+
+    void* data = instanceStagingBuffer.map();
+    memcpy(data, instances.data(), instances.size() * sizeof(VkAccelerationStructureInstanceKHR));
+    instanceStagingBuffer.unmap();
 
     //Fill the data related to the instances
     VkAccelerationStructureGeometryInstancesDataKHR instanceData{};

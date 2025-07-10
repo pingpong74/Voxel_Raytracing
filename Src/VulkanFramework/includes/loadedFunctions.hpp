@@ -13,4 +13,5 @@ namespace vkf {
     //Raytracing pipeline
     inline PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
     inline PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
+    inline PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = nullptr;
 }

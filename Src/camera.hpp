@@ -12,93 +12,39 @@ struct CameraConstants {
 };
 
 class Camera {
-    private:
-
-	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-	glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-	glm::vec3 cameraUp = glm::vec3(0.0f, -1.0f, 0.0f);
-	glm::vec3 cameraRight;
-
-	double lastX;
-	double lastY;
-
-	float yaw;
-	float pitch;
-	float roll;
-
-	glm::vec3 direction;
-	bool firstMouse;
-
-	void TakeInput(float deltaTime, GLFWwindow* window) {
-		float cameraSpeed = 10.0f * deltaTime;
-
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(window, true);
-
-		if (glfwGetKey(window, GLFW_KEY_W))  cameraPos += cameraSpeed * cameraFront;
-		if (glfwGetKey(window, GLFW_KEY_S))  cameraPos -= cameraSpeed * cameraFront;
-
-		if (glfwGetKey(window, GLFW_KEY_D)) cameraPos += cameraSpeed * cameraRight;
-		if (glfwGetKey(window, GLFW_KEY_A)) cameraPos -= cameraSpeed * cameraRight;
-	}
-
-
 
 	public:
-	Camera() {
-		Initialize();
-	}
+	Camera(GLFWwindow* window);
 
-	~Camera() {
+	~Camera() = default;
 
-	}
+	void updateCamera(float deltaTime);
 
-	void Initialize() {
-		lastX = (double)1920 * 0.5;
-		lastY = (double)1080 * 0.5;
-		firstMouse = true;
+	void mouseCallback(double xpos, double ypos);
+	void frameBufferResize(int width, int height);
 
-		yaw = -90.0f;
-		pitch = 0.0f;
-		roll = 0.0f;
+	inline CameraConstants getCamMats() {return camCons; }
 
-		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-		direction.y = sin(glm::radians(pitch));
-		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	}
+	private:
 
-	void UpdateCamera(float deltaTime, GLFWwindow* window, glm::mat4* view) {
-		cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
-		TakeInput(deltaTime, window);
-		*view = glm::lookAt(cameraPos, cameraFront + cameraPos, cameraUp);
-	}
+	CameraConstants camCons;
 
-	void MouseInput(GLFWwindow* window, double xpos, double ypos) {
+	GLFWwindow* window;
 
-		if (firstMouse) {
-			lastX = xpos;
-			lastY = ypos;
-			firstMouse = false;
-		}
+    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+    glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 cameraUp = glm::vec3(0.0f, -1.0f, 0.0f);
+    glm::vec3 cameraRight;
 
-		const float senstivity = 0.1f;
+    double lastX;
+    double lastY;
 
-		float x = -senstivity * (xpos - lastX);
-		float y = -senstivity * (ypos - lastY);
-		lastX = xpos;
-		lastY = ypos;
+    float yaw;
+    float pitch;
+    float roll;
 
-		pitch += y;
-		yaw += x;
+    glm::vec3 direction;
+    bool firstMouse;
 
-		if (pitch > 89.5f) pitch = 89.5f;
-		if (pitch < -89.5f) pitch = -89.5f;
-
-		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-		direction.y = sin(glm::radians(pitch));
-		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-
-		cameraFront = glm::normalize(direction);
-	}
-
-	inline glm::vec3 worldPos() { return cameraPos; }
+    void takeInput(float deltaTime);
 };

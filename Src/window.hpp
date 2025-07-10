@@ -16,6 +16,9 @@ class Window {
     Window(Application*);
     ~Window();
 
+    inline bool shouldClose() { return glfwWindowShouldClose(handle); }
+    void poll();
+
     private:
 
     static void frameBufferResizeCallBack(GLFWwindow*, int, int);

@@ -5,7 +5,7 @@ layout(location = 0) rayPayloadEXT vec3 hitValue;
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 1, set = 0, rgba16f) uniform image2D image;
-layout(push_constants) uniform UniformBufferObject {
+layout(push_constant) uniform UniformBufferObject {
     mat4 inverseView;
     mat4 inverseProj;
 } camMatrices;
@@ -28,4 +28,5 @@ void main()
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
 
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 1.0));
+    //imageStore(image, ivec2(gl_LaunchIDEXT.xy), direction);
 }

@@ -1,26 +1,37 @@
 #pragma once
 
-#include "../VulkanFramework/includes/instance.hpp"
 #include "../VulkanFramework/includes/logicalDevice.hpp"
 #include "../VulkanFramework/includes/swapchain.hpp"
-#include "../VulkanFramework/includes/pipelines.hpp"
+#include "../Scene/scene.hpp"
 #include "raytracer.hpp"
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan_core.h>
+
+struct FrameData {
+    VkSemaphore renderFinishSemaphore;
+    VkSemaphore imageSemaphore;
+    VkFence inFlightFence;
+    VkCommandBuffer commandBuffer;
+};
 
 class Renderer {
     public:
 
-    Renderer(GLFWwindow*, int, int);
+    Renderer(vkf::LogicalDevice* logicalDevice, vkf::CommandPool* transferPool, vkf::CommandPool* graphicsPool, vkf::CommandPool* computePool, vkf::Swapchain* swapchain);
 
+    void frameBufferResize(int width, int height);
+
+    void setScene(Scene* scene);
     void drawFrame();
 
-    ~Renderer() = default;
+    ~Renderer();
 
     private:
 
-    vkf::Instance instance;
-    vkf::LogicalDevice logicalDevice;
-    vkf::Swapchain swapchain;
-    vkf::CommandPool graphicsPool, transferPool, computePool;
+    vkf::LogicalDevice* logicalDevice;
+    vkf::Swapchain* swapchain;
+    vkf::CommandPool* graphicsPool, *transferPool, *computePool;
     Raytracer raytracer;
+    Scene* currentScene;
+    FrameData frameData;
 };

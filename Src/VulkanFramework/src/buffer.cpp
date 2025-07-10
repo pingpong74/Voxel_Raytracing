@@ -1,4 +1,5 @@
 #include "../includes/buffer.hpp"
+#include "../vulkanConfig.hpp"
 #include <vulkan/vulkan_core.h>
 
 using namespace vkf;
@@ -30,6 +31,16 @@ VkDeviceAddress Buffer::getBufferAddress() {
     addressInfo.buffer = handle;
 
     return vkGetBufferDeviceAddress(logicalDevice->handle, &addressInfo);
+}
+
+void* Buffer::map() {
+    void* data;
+    VK_CHECK(vkMapMemory(logicalDevice->handle, bufferMemory, 0, this->size, 0, &data), "Failed to map memory")
+    return data;
+}
+
+void Buffer::unmap() {
+    vkUnmapMemory(logicalDevice->handle, bufferMemory);
 }
 
 void Buffer::copyBuffer(Buffer* src, Buffer* dst, int size, VkCommandBuffer commandBuffer, int srcOffset, int dstOffset) {

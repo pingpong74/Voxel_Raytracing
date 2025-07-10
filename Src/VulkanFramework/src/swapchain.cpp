@@ -61,14 +61,20 @@ void Swapchain::create(int width, int height) {
 
 	VK_CHECK(vkCreateSwapchainKHR(logicalDevice->handle, &createInfo, nullptr, &handle), "Failed to create swapchain")
 
+	std::vector<VkImage> img;
+	std::vector<VkImageView> imgView;
+
 	vkGetSwapchainImagesKHR(logicalDevice->handle, handle, &imageCount,nullptr);
 	swapchainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(logicalDevice->handle, handle, &imageCount, swapchainImages.data());
+	img.resize(imageCount);
+	imgView.resize(imageCount);
 
-	swapchainImageViews.resize(swapchainImages.size());
+	vkGetSwapchainImagesKHR(logicalDevice->handle, handle, &imageCount, img.data());
 
-	for(int i = 0; i < swapchainImageViews.size(); i++) {
-        logicalDevice->createImageView(swapchainImages[i], swapchainFormat.format, swapchainImageViews[i]);
+	for(int i = 0; i < imageCount; i++) {
+        logicalDevice->createImageView(img[i], swapchainFormat.format, imgView[i]);
+        swapchainImages[i].view = imgView[i];
+        swapchainImages[i].handle = img[i];
 	}
 }
 
@@ -108,10 +114,6 @@ void Swapchain::recreateSwapchain(int width, int height) {
 }
 
 void Swapchain::cleanup() {
-	for(auto imageView: swapchainImageViews) {
-		vkDestroyImageView(logicalDevice->handle, imageView, nullptr);
-	}
-
 	vkDestroySwapchainKHR(logicalDevice->handle, handle, nullptr);
 }
 

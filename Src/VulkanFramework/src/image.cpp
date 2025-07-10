@@ -7,25 +7,24 @@ Image::Image(LogicalDevice* logicalDevice, VkFormat format, VkExtent2D extent) {
     this->logicalDevice = logicalDevice;
     this->format = format;
     this->extent = extent;
-    this->currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     logicalDevice->createImage(format, extent, handle, imageMemory);
     logicalDevice->createImageView(handle, format, view);
 }
 
-void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout, VkImageSubresourceRange subResourcesRange, VkPipelineStageFlags srcFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VkPipelineStageFlags dstFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT) {
-    VkImageMemoryBarrier memoryBarrier;
+void Image::transitionLayout(VkCommandBuffer commandBuffer,VkImageLayout oldLayout, VkImageLayout newLayout, VkImageSubresourceRange subResourcesRange, VkPipelineStageFlags srcFlags, VkPipelineStageFlags dstFlags) {
+    VkImageMemoryBarrier memoryBarrier{};
     memoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     memoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     memoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
-    memoryBarrier.oldLayout = currentLayout;
+    memoryBarrier.oldLayout = oldLayout;
     memoryBarrier.newLayout = newLayout;
 
     memoryBarrier.image = handle;
     memoryBarrier.subresourceRange = subResourcesRange;
 
-    switch (currentLayout) {
+    switch (oldLayout) {
 
         case VK_IMAGE_LAYOUT_UNDEFINED:
             memoryBarrier.srcAccessMask = 0;
@@ -60,6 +59,10 @@ void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLay
     }
 
     switch(newLayout) {
+        case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+            memoryBarrier.dstAccessMask = 0; // No access needed after present
+            break;
+
         case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
 			memoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			break;
@@ -86,8 +89,6 @@ void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLay
         default:
             break;
     }
-
-    currentLayout = newLayout;
 
     memoryBarrier.pNext = nullptr;
     vkCmdPipelineBarrier(commandBuffer, srcFlags, dstFlags, 0, 0, nullptr, 0, nullptr, 1, &memoryBarrier);

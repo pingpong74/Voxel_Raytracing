@@ -13,7 +13,6 @@ std::vector<BottomLevelAccelerationStructure> BottomLevelAccelerationStructure::
     std::vector<BottomLevelAccelerationStructure> accelerationStructures(count);
 
     for(int i = 0; i < count; i++) {
-        std::cout << i << std::endl;
         VkAccelerationStructureGeometryAabbsDataKHR aabbData{};
         aabbData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
         aabbData.data.deviceAddress = blasBuldInfo[i].boundingBoxBufferAddress;
@@ -71,8 +70,6 @@ std::vector<BottomLevelAccelerationStructure> BottomLevelAccelerationStructure::
         accelerationStructures[i].logicalDevice = logicalDevice;
     }
 
-    std::cout << count << std::endl;
-
     VkAccelerationStructureBuildRangeInfoKHR* infos[count];
 
     for(int i = 0; i < count; i++) {
@@ -93,5 +90,5 @@ VkDeviceAddress BottomLevelAccelerationStructure::getAddress() {
 }
 
 BottomLevelAccelerationStructure::~BottomLevelAccelerationStructure() {
-    vkDestroyAccelerationStructureKHR(logicalDevice->handle, handle, nullptr);
+    if(handle != VK_NULL_HANDLE) vkDestroyAccelerationStructureKHR(logicalDevice->handle, handle, nullptr);
 }

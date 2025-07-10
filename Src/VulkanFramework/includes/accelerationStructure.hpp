@@ -18,7 +18,7 @@ namespace vkf {
 
     class BottomLevelAccelerationStructure {
         public:
-        VkAccelerationStructureKHR handle;
+        VkAccelerationStructureKHR handle = VK_NULL_HANDLE;
 
         BottomLevelAccelerationStructure() = default;
         ~BottomLevelAccelerationStructure();
@@ -34,7 +34,7 @@ namespace vkf {
 
     class TopLevelAccelerationStructure {
         public:
-        VkAccelerationStructureKHR handle;
+        VkAccelerationStructureKHR handle = VK_NULL_HANDLE;
         std::vector<BottomLevelAccelerationStructure> blases;
         std::vector<VkTransformMatrixKHR> transforms;
         VkCommandBuffer commandBuffer;

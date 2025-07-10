@@ -106,6 +106,7 @@ LogicalDevice::LogicalDevice(Instance* instance) {
     //Raytracing pipeline
     LOAD_FUNC(handle, vkCreateRayTracingPipelinesKHR)
     LOAD_FUNC(handle, vkGetRayTracingShaderGroupHandlesKHR)
+    LOAD_FUNC(handle, vkCmdTraceRaysKHR);
 }
 
 void LogicalDevice::createBuffer(uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& bufferHandle, VkDeviceMemory& bufferMemory) {
@@ -209,7 +210,7 @@ void LogicalDevice::createImageView(VkImage image, VkFormat format, VkImageView&
 void LogicalDevice::destroyImage(VkImage image, VkDeviceMemory imgMemory, VkImageView imageView) {
     vkDestroyImageView(handle, imageView, nullptr);
     vkDestroyImage(handle, image, nullptr);
-    vkFreeMemory(handle, imgMemory, nullptr);
+    if(imgMemory != VK_NULL_HANDLE) vkFreeMemory(handle, imgMemory, nullptr);
 }
 
 uint32_t LogicalDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {

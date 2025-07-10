@@ -4,6 +4,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "logicalDevice.hpp"
+#include "image.hpp"
 
 namespace vkf {
     class Swapchain {
@@ -17,15 +18,13 @@ namespace vkf {
         VkPresentModeKHR swapchainPresentMode;
         VkExtent2D swapchainExtent;
 
-        std::vector<VkImage> swapchainImages;
+        std::vector<Image> swapchainImages;
 
         void recreateSwapchain(int width, int height);
 
         ~Swapchain();
 
         private:
-
-        std::vector<VkImageView> swapchainImageViews;
 
         LogicalDevice* logicalDevice;
         VkSurfaceKHR surface;
